@@ -15,11 +15,16 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-example
-parallel
-simple
-test
-touchy
+examples/cloudfoundry/cloudfoundry
+examples/docker/docker
+examples/example/
+examples/parallel/parallel
+examples/simple/simple
+examples/template/template
+test//example
+test/parallel
+test/test
+test/touchy
 1.txt
 2.txt
 3.txt
@@ -27,9 +32,9 @@ touchy
 5.txt
 output.txt
 input.txt
-/examples/template/template
-docker
-cloudfoundry
+test/template
+test/docker
+test/cloudfoundry
 
 1.db
 2.db
