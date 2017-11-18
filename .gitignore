@@ -32,6 +32,7 @@ test/touchy
 5.txt
 output.txt
 input.txt
+test/simple
 test/template
 test/docker
 test/cloudfoundry
