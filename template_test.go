@@ -86,7 +86,7 @@ var _ = Describe("Template", func() {
 			Ω(template.Next().Args[0]).Should(Equal("6"))
 		})
 
-		It("should temporarly convert a JobTemplate with MapTo a given output system", func() {
+		It("should temporarily convert a JobTemplate with MapTo a given output system", func() {
 			template := wfl.NewTemplate(jt)
 			Ω(template).ShouldNot(BeNil())
 

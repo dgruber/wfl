@@ -25,6 +25,7 @@ test//example
 test/parallel
 test/test
 test/touchy
+test/failure
 1.txt
 2.txt
 3.txt

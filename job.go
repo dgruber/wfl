@@ -156,7 +156,7 @@ func (j *Job) Kill() *Job {
 	return j
 }
 
-// Returns the error if occured during last job operation.
+// Returns the error if occurred during last job operation.
 func (j *Job) LastError() error {
 	return j.lastError
 }
@@ -290,14 +290,12 @@ func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
 	job, err := j.jobCheck()
 	if err != nil {
 		return drmaa2interface.Undetermined
-	} else {
-		lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
-		if lastError != nil {
-			return drmaa2interface.Undetermined
-		}
-		return job.GetState()
 	}
-	return drmaa2interface.Undetermined
+	lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
+	if lastError != nil {
+		return drmaa2interface.Undetermined
+	}
+	return job.GetState()
 }
 
 // OnSuccess executes the given function after the previously submitted

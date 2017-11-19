@@ -10,7 +10,7 @@ import (
 // Demonstration of how Template can be used for generating a sequence
 // of environment variables (TASK_ID) in the job context so that each
 // job can process a different data chunk by translating the content of
-// the TASK_ID enviornment variable to the data to process.
+// the TASK_ID environment variable to the data to process.
 
 // implements a canonical example of a workflow where the first task
 // does some pre-processing (here generating a sequence of characters),
