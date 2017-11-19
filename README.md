@@ -9,10 +9,10 @@ different API.
 
 _wfl_ abstracts away from the underlying details of the processes, containers, and 
 workload management systems. _wfl_ provides a simple, unified interface which allows
-to quickly define and execute a job workflow and changed between different execution
-backends without changing the workflow.
+to quickly define and execute a job workflow and change between different execution
+backends without changing the workflow itself.
 
-_wfl_ does not come with many features but is be simple to use and enough to define and
+_wfl_ does not come with many features but is simple to use and enough to define and
 run jobs with dependencies.
 
 In its simplest form a process can be started and waited for:
@@ -21,7 +21,7 @@ In its simplest form a process can be started and waited for:
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("convert", "image.jpg", "image.png").Wait()
 ```
 
-_wfl_ aims to work for any kind of workloads. It works on a Mac and Raspberry Pi the same way
+_wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
 management - moving results from one job to another. That's deliberately not implemented.
 On large scale you are missing checkpoint and restart functionality or HA of the workflow 
@@ -32,7 +32,7 @@ I created it for writing simple test applications against the underlying
 (another free-time project) but I think it is useful also for many other cases.
 
 [Go drmaa2os lib](https://github.com/dgruber/drmaa2os) is also responsible for lots of
-the functionality (especially evaluating JobTemplate). So please contribute or open
+the functionality (like evaluating the JobTemplate elements). So please contribute or open
 an issue over there.
 
 _wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
@@ -98,23 +98,23 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 
 Job submission:
 
-* Run()
-* RunT()
-* Resubmit()
+* Run() -> Starts a process, container, or submits a job and comes back immediately
+* RunT() -> Like above but with a JobTemplate as parameter
+* Resubmit() -> Run().Run().Run()...
 
 Job control:
 
-* Suspend()
-* Resume()
+* Suspend() -> Stops a process from execution (SIGTSTP)...
+* Resume() -> Continues a process (SIGCONT)...
 * Kill()
 
 Function execution:
 
-* Do()
-* Then()
-* OnSuccess()
-* OnFailure()
-* OnError()
+* Do() -> Executes a function
+* Then() -> Waits for end of process and executes function
+* OnSuccess() -> Executes a function if the process / container run successfully (exit code 0)
+* OnFailure() -> Executes a function if the process / container failed (exit code != 0)
+* OnError() -> Executes a function if the process / container could not be created
 
 Blocker:
 
@@ -129,7 +129,7 @@ Job flow control:
 * OnSuccessRun() // wait() + success() + run()
 * OnFailureRun()
 * Retry() // wait() + !success() + resubmit() + wait() + !success() ...
-* OneFailed() // checks if one of the jobs in flow failed
+* OneFailed() // checks if one of the jobs failed
 
 Job status and general checks:
 
