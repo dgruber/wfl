@@ -6,11 +6,12 @@ import (
 	"github.com/dgruber/drmaa2interface"
 )
 
+// Workflow contains the backend context and a job session. A DRMAA2 job session
+// provides typically logical isolation for jobs.
 type Workflow struct {
 	ctx                   *Context
 	js                    drmaa2interface.JobSession
 	workflowCreationError error
-	jobs                  []*Job
 }
 
 func NewWorkflow(context *Context) *Workflow {
@@ -27,11 +28,13 @@ func NewWorkflow(context *Context) *Workflow {
 				err = fmt.Errorf("Error creating (%s) or opening (%s) Job Session \"wfl\"\n", errJS.Error(), errOpenJS.Error())
 			}
 		}
-		return &Workflow{ctx: context, js: js, workflowCreationError: err, jobs: make([]*Job, 0, 1)}
+		return &Workflow{ctx: context, js: js, workflowCreationError: err}
 	}
 	return &Workflow{workflowCreationError: err, ctx: nil}
 }
 
+// OnError executes a function if happened during creating a job session
+// or opening a job session.
 func (w *Workflow) OnError(f func(e error)) *Workflow {
 	if w.workflowCreationError != nil {
 		f(w.workflowCreationError)
@@ -39,10 +42,14 @@ func (w *Workflow) OnError(f func(e error)) *Workflow {
 	return w
 }
 
+// Error returns the error if happened during creating a job session
+// or opening a job session.
 func (w *Workflow) Error() error {
 	return w.workflowCreationError
 }
 
+// HasError returns true if there was an error during creating a job session
+// or opening a job session.
 func (w *Workflow) HasError() bool {
 	if w.workflowCreationError != nil {
 		return true

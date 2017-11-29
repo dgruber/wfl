@@ -17,6 +17,9 @@ type element struct {
 	retry            int
 }
 
+// Job defines methods for job life-cycle management. A job is
+// always bound to a workflow which defines the context and
+// session of the underlying backend.
 type Job struct {
 	wfl       *Workflow
 	joblist   []*element // predecessors
@@ -117,6 +120,7 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return j
 }
 
+// Do executes a function when the previous action succeeded.
 func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
 	if job, err := j.jobCheck(); err != nil {
 		j.lastError = err
@@ -161,6 +165,8 @@ func (j *Job) LastError() error {
 	return j.lastError
 }
 
+// Resubmit starts the previously submitted job n-times. The jobs are
+// executed in parallel.
 func (j *Job) Resubmit(r int) *Job {
 	for i := 0; i < r; i++ {
 		if e := j.lastJob(); e != nil {
@@ -188,6 +194,29 @@ func (j *Job) OneFailed() bool {
 }
 
 // Blocking
+
+// RunEvery provides the same functionaly like RunEveryT but the job is created
+// based on the given command with the arguments.
+func (j *Job) RunEvery(d time.Duration, end time.Time, cmd string, args ...string) error {
+	return j.RunEveryT(d, end, drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args})
+}
+
+// RunEveryT submits a job every d time.Duration regardless if the previously
+// job is still running or finished or failed. The method only aborts and returns
+// an error if an error during job submission happend and the job could not
+// be submitted.
+func (j *Job) RunEveryT(d time.Duration, end time.Time, jt drmaa2interface.JobTemplate) error {
+	for range time.NewTicker(d).C {
+		if time.Now().After(end) {
+			return nil
+		}
+		j.RunT(jt)
+		if j.lastError != nil {
+			return j.lastError
+		}
+	}
+	return nil
+}
 
 // After blocks the given duration and continues by returning the same job.
 func (j *Job) After(d time.Duration) *Job {

@@ -43,6 +43,12 @@ var _ = Describe("Job", func() {
 			Ω(job).ShouldNot(BeNil())
 		})
 
+		It("should be possible to run a job every d times", func() {
+			forTheNext50ms := time.Now().Add(time.Millisecond * 50)
+			err := wfl.NewJob(wf).RunEvery(time.Millisecond*10, forTheNext50ms, "sleep", "0")
+			Ω(err).Should(BeNil())
+		})
+
 		It("should show the correct exit status", func() {
 			job := wf.Run("sleep", "0")
 			Ω(job).ShouldNot(BeNil())
