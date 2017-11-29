@@ -101,6 +101,8 @@ Job submission:
 * Run() -> Starts a process, container, or submits a job and comes back immediately
 * RunT() -> Like above but with a JobTemplate as parameter
 * Resubmit() -> Run().Run().Run()...
+* RunEvery() -> Submits a job every d time.Duration
+* RunEveryT()
 
 Job control:
 
