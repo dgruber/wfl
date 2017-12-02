@@ -135,6 +135,8 @@ Job flow control:
 
 Job status and general checks:
 
+* JobID() -> Returns the ID of the submitted job.
+* JobInfo() -> Returns the DRMAA2 JobInfo of the job. 
 * Template() 
 * State()
 * LastError()
@@ -240,7 +242,7 @@ The exit status is available as well. _ExitStatus()_ blocks until the previously
 In order to run jobs depending on the exit status the _OnFailure_ and _OnSuccess_ methods can be used:
 
 ```go
-	wf.Run("false").OnFailureRun("true").OnSuccessRun("false")
+    wf.Run("false").OnFailureRun("true").OnSuccessRun("false")
 ```
 
 For executing a function on a submission error _OnError()_ can be used.

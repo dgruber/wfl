@@ -6,6 +6,7 @@ import (
 	"github.com/dgruber/drmaa2os"
 )
 
+// Context contains a pointer to execution backend and configuration for it.
 type Context struct {
 	ctxCreationErr     error
 	sm                 drmaa2interface.SessionManager

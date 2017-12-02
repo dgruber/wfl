@@ -19,30 +19,31 @@ type element struct {
 
 // Job defines methods for job life-cycle management. A job is
 // always bound to a workflow which defines the context and
-// session of the underlying backend.
+// job session (logical separation of jobs) of the underlying backend.
 type Job struct {
 	wfl       *Workflow
-	joblist   []*element // predecessors
+	tasklist  []*element // predecessors
 	lastError error
 }
 
 // NewJob creates the initial empty job with the given workflow.
 func NewJob(wfl *Workflow) *Job {
 	return &Job{
-		wfl:     wfl,
-		joblist: make([]*element, 0),
+		wfl:      wfl,
+		tasklist: make([]*element, 0),
 	}
 }
 
+// EmptyJob creates an empty job.
 func EmptyJob() *Job {
 	return &Job{}
 }
 
 func (j *Job) lastJob() *element {
-	if len(j.joblist) == 0 {
+	if len(j.tasklist) == 0 {
 		return nil
 	}
-	return j.joblist[len(j.joblist)-1]
+	return j.tasklist[len(j.tasklist)-1]
 }
 
 func (j *Job) jobCheck() (drmaa2interface.Job, error) {
@@ -82,6 +83,47 @@ func (j *Job) State() drmaa2interface.JobState {
 	return job.GetState()
 }
 
+// JobID returns the job ID of the previously submitted job.
+func (j *Job) JobID() string {
+	job, err := j.jobCheck()
+	if err != nil {
+		j.lastError = err
+		return ""
+	}
+	return job.GetID()
+}
+
+// JobInfo returns information about the last task/job. Which values
+// are actually set depends on the DRMAA2 implementation of
+// the backend specified in the context.
+func (j *Job) JobInfo() drmaa2interface.JobInfo {
+	job, err := j.jobCheck()
+	if err != nil {
+		j.lastError = err
+		return drmaa2interface.JobInfo{}
+	}
+	ji, errJI := job.GetJobInfo()
+	if errJI != nil {
+		j.lastError = errJI
+		return drmaa2interface.JobInfo{}
+	}
+	return ji
+}
+
+func (j *Job) JobInfos() []drmaa2interface.JobInfo {
+	jis := make([]drmaa2interface.JobInfo, 0, len(j.tasklist))
+	for _, task := range j.tasklist {
+		if task.job != nil {
+			ji, err := task.job.GetJobInfo()
+			if err != nil {
+				continue
+			}
+			jis = append(jis, ji)
+		}
+	}
+	return jis
+}
+
 // ------------
 // NON-Blocking
 // ------------
@@ -116,7 +158,7 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	}
 	job, err := j.wfl.js.RunJob(jt)
 	j.lastError = err
-	j.joblist = append(j.joblist, &element{job: job, submitError: err, template: jt})
+	j.tasklist = append(j.tasklist, &element{job: job, submitError: err, template: jt})
 	return j
 }
 
@@ -173,7 +215,7 @@ func (j *Job) Resubmit(r int) *Job {
 			job, err := j.wfl.js.RunJob(e.template)
 			j.lastError = err
 			if err == nil {
-				j.joblist = append(j.joblist, &element{job: job, submitError: err, template: e.template})
+				j.tasklist = append(j.tasklist, &element{job: job, submitError: err, template: e.template})
 			}
 		} else {
 			j.lastError = errors.New("job not available")
@@ -185,7 +227,7 @@ func (j *Job) Resubmit(r int) *Job {
 
 // OneFailed returns true when one job in the whole chain failed.
 func (j *Job) OneFailed() bool {
-	for _, element := range j.joblist {
+	for _, element := range j.tasklist {
 		if element.job.GetState() == drmaa2interface.Failed {
 			return true
 		}
@@ -224,13 +266,20 @@ func (j *Job) After(d time.Duration) *Job {
 	return j
 }
 
+func wait(element *element) {
+	if element.job == nil {
+		return
+	}
+	element.terminationError = element.job.WaitTerminated(drmaa2interface.InfiniteTime)
+	element.terminated = true
+	element.jobinfo, element.jobinfoError = element.job.GetJobInfo()
+}
+
 // Wait until the most recently job was finished.
 func (j *Job) Wait() *Job {
 	j.lastError = nil
-	if element := j.lastJob(); element != nil && element.job != nil {
-		element.terminationError = element.job.WaitTerminated(drmaa2interface.InfiniteTime)
-		element.terminated = true
-		element.jobinfo, element.jobinfoError = element.job.GetJobInfo()
+	if element := j.lastJob(); element != nil {
+		wait(element)
 	} else {
 		j.lastError = errors.New("job not available")
 	}
@@ -249,11 +298,11 @@ func (j *Job) Retry(r int) *Job {
 	return j
 }
 
-// Synchronize with all jobs in the chain. All needs to be terminated until
+// Synchronize with all jobs in the chain. All jobs are terminated when
 // the call returns.
 func (j *Job) Synchronize() *Job {
-	for _, element := range j.joblist {
-		element.job.WaitTerminated(drmaa2interface.InfiniteTime)
+	for _, element := range j.tasklist {
+		wait(element)
 	}
 	return j
 }

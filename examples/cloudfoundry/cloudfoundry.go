@@ -10,7 +10,6 @@ import (
 var panicF = func(e error) { panic(e) }
 
 func main() {
-
 	// cf login details needs to be set before
 	addr := os.Getenv("CF_ADDR")         // like "https://api.run.pivotal.io"
 	user := os.Getenv("CF_USER")         // username

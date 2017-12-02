@@ -57,10 +57,12 @@ func (w *Workflow) HasError() bool {
 	return false
 }
 
+// Run submits the first job in the workflow. Same as NewJob(w).Run().
 func (w *Workflow) Run(cmd string, args ...string) *Job {
 	return NewJob(w).Run(cmd, args...)
 }
 
+// RunT submits the first job in the workflow. Same as NewJob(w).RunT().
 func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return NewJob(w).RunT(jt)
 }

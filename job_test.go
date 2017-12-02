@@ -310,6 +310,39 @@ var _ = Describe("Job", func() {
 			Ω(failed).Should(BeFalse())
 		})
 
+		It("should return the job ID of the previously submitted job", func() {
+			job := wf.Run("sleep", "0")
+			Ω(job).ShouldNot(BeNil())
+			id := job.JobID()
+			Ω(id).ShouldNot(Equal(""))
+			Ω(job.LastError()).Should(BeNil())
+		})
+
+		Context("JobInfo related functions", func() {
+			It("should return a JobInfo on success", func() {
+				ji := wf.Run("sleep", "0").Wait().JobInfo()
+				Ω(ji).ShouldNot(BeNil())
+			})
+
+			It("should return a JobInfo when failed", func() {
+				ji := wf.Run("date", "unknownformat").Wait().JobInfo()
+				Ω(ji).ShouldNot(BeNil())
+			})
+
+			It("should return a JobInfo when running", func() {
+				job := wf.Run("sleep", "1")
+				ji := job.JobInfo()
+				Ω(ji).ShouldNot(BeNil())
+				job.Kill()
+			})
+
+			It("should return JobInfos with one job", func() {
+				ji := wf.Run("sleep", "0").Wait().JobInfos()
+				Ω(ji).ShouldNot(BeNil())
+				Ω(len(ji)).Should(BeNumerically("==", 1))
+			})
+		})
+
 	})
 
 	Context("Basic error cases", func() {
@@ -401,6 +434,13 @@ var _ = Describe("Job", func() {
 		It("should execute a function OnError() on job submission error", func() {
 			var err error
 			wfl.EmptyJob().Run("").OnError(func(e error) { err = e })
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("should not return the JobInfo in case of an error", func() {
+			job := wfl.EmptyJob()
+			job.JobInfo()
+			err := job.LastError()
 			Ω(err).ShouldNot(BeNil())
 		})
 
