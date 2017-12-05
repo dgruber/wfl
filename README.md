@@ -69,7 +69,9 @@ etc. will be supported when the DRMAA2 job tracker implementation is available.
 
 ## Workflow
 
-A workflow encapsulates a set of jobs using the same backend (context).
+A workflow encapsulates a set of jobs using the same backend (context). Depending on the execution
+backend it can be seen as a namespace. 
+
 It can be created by using:
 
 ```go
@@ -92,7 +94,7 @@ or with
 
 ## Job
 
-Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining  calls in an easy way.
+Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining  calls in an easy way. A job can also be seen as a container and control unit for tasks.
 
 Methods can be classified in blocking, non-blocking, job template based, function based, and error handlers.
 
