@@ -51,18 +51,28 @@ For creating a context which executes the jobs of a workflow in operating system
 If the workflow needs to be executed in containers the _DockerContext_ can be used: 
 
 ```go
-    wfl.NewDockerContext("golang:latest", "tmp.db")
+    wfl.NewDockerContext()
 ```
 
-The first parameter is the name of the default Docker image used when not specified in
-_JobTemplate_ as _JobCategory_. The second parameter is the name of the DB file which 
-keeps the jobs persistent.
+If the Docker context needs to be configured with a default Docker image 
+(when Run() is used or RunT() without a configured _JobCategory_ (which _is_ the Docker image))
+then the _ContextByCfg()_ can be called.
+
+```go
+    wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest", DBFile: "tmp2.db"})
+```
 
 When you want to run the workflow as Cloud Foundry Tasks the _CloudFoundryContext_ can be used:
 
 ```go
-    wfl.NewCloudFoundryContext("addressOfAPI", "username", "password", "tmp.db")
+    wfl.NewCloudFoundryContext()
 ```
+
+Without a config it uses following environment variables to find the Cloud Foundry cloud controller API:
+
+* CF_API (like https://api.run.pivotal.io)
+* CF_USER
+* CF_PASSWORD
 
 Contexts for other workload managers like Kubernetes, DRMAA compatible HPC schedulers,
 etc. will be supported when the DRMAA2 job tracker implementation is available.

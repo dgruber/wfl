@@ -17,53 +17,78 @@ var _ = Describe("Context", func() {
 			os.Remove("tmp.db")
 		})
 
-		It("should be possible to create a drmaa2 process context", func() {
-			ctx := wfl.NewProcessContext()
-			err := ctx.Error()
-			Ω(err).Should(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
-		})
-
-		It("should be possible to create a drmaa2 docker context", func() {
-			ctx := wfl.NewDockerContext("golang:latest", "tmp.db")
-			err := ctx.Error()
-			Ω(err).Should(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
-		})
-
-		It("should be possible to create a cloud foundry tasks context", func() {
-			ctx := wfl.NewCloudFoundryContext("https://api.run.pivotal.io", "test", "test", "tmp.db")
-			err := ctx.Error()
-			Ω(err).Should(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
-		})
-
-		It("should be possible to create an empty test context", func() {
-			ctx := wfl.DRMAA2SessionManagerContext(nil)
-			err := ctx.Error()
-			Ω(err).Should(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
-		})
-
-		It("should be possible to create an raw drmaa2 session manager context", func() {
-			ctx := wfl.DRMAA2SessionManagerContext(nil)
-			err := ctx.Error()
-			Ω(err).Should(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
-		})
-
-		It("should execute a function when an error in context creation happened", func() {
-			ctx := wfl.ErrorTestContext()
-			var e error
-			ctx.OnError(func(err error) {
-				e = err
+		Context("Process Context", func() {
+			It("should be possible to create a process context", func() {
+				ctx := wfl.NewProcessContext()
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
 			})
-			Ω(e).ShouldNot(BeNil())
-			err := ctx.Error()
-			Ω(err).ShouldNot(BeNil())
-			Ω(ctx).ShouldNot(BeNil())
+			It("should be possible to create a process context with configuration", func() {
+				ctx := wfl.NewProcessContextByCfg(wfl.ProcessConfig{DBFile: "tmp.db"})
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
 		})
 
+		Context("Docker Context", func() {
+			It("should be possible to create a docker context", func() {
+				ctx := wfl.NewDockerContext()
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+			It("should be possible to create a docker context with configuration", func() {
+				ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DBFile: "tmp.db", DefaultDockerImage: "golang:latest"})
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+		})
+
+		Context("Cloud Foundry Context", func() {
+			It("should be possible to create a cloud foundry tasks context", func() {
+				ctx := wfl.NewCloudFoundryContext()
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+			It("should be possible to create a cloud foundry tasks context with configuration", func() {
+				ctx := wfl.NewCloudFoundryContextByCfg(wfl.CloudFoundryConfig{DBFile: "tmp.db"})
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+		})
+
+		Context("Test Contexts", func() {
+			It("should be possible to create an empty test context", func() {
+				ctx := wfl.DRMAA2SessionManagerContext(nil)
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+
+			It("should be possible to create an raw drmaa2 session manager context", func() {
+				ctx := wfl.DRMAA2SessionManagerContext(nil)
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+
+			It("should execute a function when an error in context creation happened", func() {
+				ctx := wfl.ErrorTestContext()
+				var e error
+				ctx.OnError(func(err error) {
+					e = err
+				})
+				Ω(e).ShouldNot(BeNil())
+				err := ctx.Error()
+				Ω(err).ShouldNot(BeNil())
+				Ω(ctx).ShouldNot(BeNil())
+			})
+		})
 	})
 
 })

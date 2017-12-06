@@ -22,7 +22,8 @@ type element struct {
 // job session (logical separation of jobs) of the underlying backend.
 type Job struct {
 	wfl       *Workflow
-	tasklist  []*element // predecessors
+	tasklist  []*element
+	tag       string
 	lastError error
 }
 
@@ -54,6 +55,19 @@ func (j *Job) jobCheck() (drmaa2interface.Job, error) {
 	} else {
 		return element.job, nil
 	}
+}
+
+// Job Sequence Properties
+
+// TagWith tags a job with a string for identification. Global for all jobs / tasks.
+func (j *Job) TagWith(tag string) *Job {
+	j.tag = tag
+	return j
+}
+
+// Tag returns the tag of the job.
+func (j *Job) Tag() string {
+	return j.tag
 }
 
 // Job Properties

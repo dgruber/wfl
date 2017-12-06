@@ -43,6 +43,14 @@ var _ = Describe("Job", func() {
 			Ω(job).ShouldNot(BeNil())
 		})
 
+		It("should be possible to tag a job", func() {
+			job := wf.Run("sleep", "0").TagWith("Tag")
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Tag()).Should(Equal("Tag"))
+			job.TagWith("Tag2")
+			Ω(job.Tag()).Should(Equal("Tag2"))
+		})
+
 		It("should be possible to run a job every d times", func() {
 			forTheNext50ms := time.Now().Add(time.Millisecond * 50)
 			err := wfl.NewJob(wf).RunEvery(time.Millisecond*10, forTheNext50ms, "sleep", "0")

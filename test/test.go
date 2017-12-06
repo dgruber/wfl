@@ -26,6 +26,7 @@ func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job
 		"docker":       "../examples/docker/docker.go",
 		"template":     "../examples/template/template.go",
 		"parallel":     "../examples/parallel/parallel.go",
+		"notifier":     "../examples/notifier/notifier.go",
 	}
 
 	jtemplate := drmaa2interface.JobTemplate{
@@ -49,6 +50,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 		"docker":       "/go/src/github.com/dgruber/wfl/examples/docker/docker.go",
 		"template":     "/go/src/github.com/dgruber/wfl/examples/template/template.go",
 		"parallel":     "/go/src/github.com/dgruber/wfl/examples/parallel/parallel.go",
+		"notifier":     "/go/src/github.com/dgruber/wfl/examples/notifier/notifier.go",
 	}
 
 	goPath := os.Getenv("GOPATH")
@@ -65,7 +67,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 			goPath + "/src/github.com/mitchellh/reflectwalk":   "/go/src/github.com/mitchellh/reflectwalk"},
 	}
 
-	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContext(image, "tmp2.db")))
+	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image, DBFile: "tmp2.db"})))
 
 	return testApps, jtemplate, job
 }
