@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/dgruber/wfl"
+	"os"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 		cfg := wfl.ProcessConfig{
 			DBFile: "wf1.db",
 		}
+		defer os.Remove("wf1.db")
+
 		wfl.NewJob(wfl.NewWorkflow(wfl.NewProcessContextByCfg(cfg))).
 			TagWith("A").
 			Run("sleep", "1").
@@ -26,8 +29,10 @@ func main() {
 	go func() {
 		// pre-proc followed by parallel exec
 		cfg := wfl.ProcessConfig{
-			DBFile: "wf1.db",
+			DBFile: "wf2.db",
 		}
+		defer os.Remove("wf2.db")
+
 		wfl.NewJob(wfl.NewWorkflow(wfl.NewProcessContextByCfg(cfg))).
 			TagWith("B").
 			Run("sleep", "1").
