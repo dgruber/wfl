@@ -393,15 +393,15 @@ var _ = Describe("Job", func() {
 		It("should error when suspending, resuming or killing an empty job", func() {
 			job := wfl.EmptyJob().Suspend()
 			Ω(job.LastError()).ShouldNot(BeNil())
-			Ω(job.LastError().Error()).Should(ContainSubstring("job element not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
 			job.Resume()
 			Ω(job.LastError()).ShouldNot(BeNil())
-			Ω(job.LastError().Error()).Should(ContainSubstring("job element not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
 			job.Kill()
 			Ω(job.LastError()).ShouldNot(BeNil())
-			Ω(job.LastError().Error()).Should(ContainSubstring("job element not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
 		})
 
@@ -409,7 +409,7 @@ var _ = Describe("Job", func() {
 			job := wfl.EmptyJob()
 			state := job.State()
 			Ω(job.LastError()).ShouldNot(BeNil())
-			Ω(job.LastError().Error()).Should(ContainSubstring("job element not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 			Ω(state).Should(BeNumerically("==", drmaa2interface.Undetermined))
 		})
 
@@ -417,7 +417,7 @@ var _ = Describe("Job", func() {
 			job := wfl.EmptyJob()
 			template := job.Template()
 			Ω(job.LastError()).ShouldNot(BeNil())
-			Ω(job.LastError().Error()).Should(ContainSubstring("job element not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 			Ω(template).Should(BeNil())
 		})
 

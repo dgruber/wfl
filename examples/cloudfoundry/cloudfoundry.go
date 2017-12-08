@@ -10,16 +10,14 @@ import (
 var panicF = func(e error) { panic(e) }
 
 func main() {
-	// cf login details needs to be set before
-	addr := os.Getenv("CF_ADDR")         // like "https://api.run.pivotal.io"
-	user := os.Getenv("CF_USER")         // username
-	password := os.Getenv("CF_PASSWORD") // password
+	// cf login details needs to be set before in the environment (or create the contex ByCfg())
+	// CF_API / CF_USER / CF_PASSWORD
+
 	// GUID of app of which the droplet is used as image for the task
 	// -> cf app <app_name> --guid
 	appGUID := os.Getenv("APP_GUID")
 
-	ctx := wfl.NewCloudFoundryContext(addr, user, password, "temp.db").OnError(panicF)
-	defer os.Remove("temp.db")
+	ctx := wfl.NewCloudFoundryContext().OnError(panicF)
 
 	state := wfl.NewJob(wfl.NewWorkflow(ctx).OnError(panicF)).RunT(drmaa2interface.JobTemplate{
 		RemoteCommand: "sleep",

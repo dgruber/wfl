@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-type element struct {
+type task struct {
 	job              drmaa2interface.Job
 	template         drmaa2interface.JobTemplate
+	jobinfo          drmaa2interface.JobInfo
 	terminated       bool
 	submitError      error
 	terminationError error
-	jobinfo          drmaa2interface.JobInfo
 	jobinfoError     error
 	retry            int
 }
@@ -22,7 +22,7 @@ type element struct {
 // job session (logical separation of jobs) of the underlying backend.
 type Job struct {
 	wfl       *Workflow
-	tasklist  []*element
+	tasklist  []*task
 	tag       string
 	lastError error
 }
@@ -31,7 +31,7 @@ type Job struct {
 func NewJob(wfl *Workflow) *Job {
 	return &Job{
 		wfl:      wfl,
-		tasklist: make([]*element, 0),
+		tasklist: make([]*task, 0),
 	}
 }
 
@@ -40,7 +40,7 @@ func EmptyJob() *Job {
 	return &Job{}
 }
 
-func (j *Job) lastJob() *element {
+func (j *Job) lastJob() *task {
 	if len(j.tasklist) == 0 {
 		return nil
 	}
@@ -48,12 +48,12 @@ func (j *Job) lastJob() *element {
 }
 
 func (j *Job) jobCheck() (drmaa2interface.Job, error) {
-	if element := j.lastJob(); element == nil {
-		return nil, errors.New("job element not available")
-	} else if element.job == nil {
+	if task := j.lastJob(); task == nil {
+		return nil, errors.New("job task not available")
+	} else if task.job == nil {
 		return nil, errors.New("job not available")
 	} else {
-		return element.job, nil
+		return task.job, nil
 	}
 }
 
@@ -172,7 +172,7 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	}
 	job, err := j.wfl.js.RunJob(jt)
 	j.lastError = err
-	j.tasklist = append(j.tasklist, &element{job: job, submitError: err, template: jt})
+	j.tasklist = append(j.tasklist, &task{job: job, submitError: err, template: jt})
 	return j
 }
 
@@ -229,7 +229,7 @@ func (j *Job) Resubmit(r int) *Job {
 			job, err := j.wfl.js.RunJob(e.template)
 			j.lastError = err
 			if err == nil {
-				j.tasklist = append(j.tasklist, &element{job: job, submitError: err, template: e.template})
+				j.tasklist = append(j.tasklist, &task{job: job, submitError: err, template: e.template})
 			}
 		} else {
 			j.lastError = errors.New("job not available")
@@ -241,8 +241,8 @@ func (j *Job) Resubmit(r int) *Job {
 
 // OneFailed returns true when one job in the whole chain failed.
 func (j *Job) OneFailed() bool {
-	for _, element := range j.tasklist {
-		if element.job.GetState() == drmaa2interface.Failed {
+	for _, task := range j.tasklist {
+		if task.job.GetState() == drmaa2interface.Failed {
 			return true
 		}
 	}
@@ -280,20 +280,20 @@ func (j *Job) After(d time.Duration) *Job {
 	return j
 }
 
-func wait(element *element) {
-	if element.job == nil {
+func wait(task *task) {
+	if task.job == nil {
 		return
 	}
-	element.terminationError = element.job.WaitTerminated(drmaa2interface.InfiniteTime)
-	element.terminated = true
-	element.jobinfo, element.jobinfoError = element.job.GetJobInfo()
+	task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
+	task.terminated = true
+	task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
 }
 
 // Wait until the most recently job was finished.
 func (j *Job) Wait() *Job {
 	j.lastError = nil
-	if element := j.lastJob(); element != nil {
-		wait(element)
+	if task := j.lastJob(); task != nil {
+		wait(task)
 	} else {
 		j.lastError = errors.New("job not available")
 	}
@@ -315,8 +315,8 @@ func (j *Job) Retry(r int) *Job {
 // Synchronize with all jobs in the chain. All jobs are terminated when
 // the call returns.
 func (j *Job) Synchronize() *Job {
-	for _, element := range j.tasklist {
-		wait(element)
+	for _, task := range j.tasklist {
+		wait(task)
 	}
 	return j
 }
@@ -345,8 +345,8 @@ func (j *Job) Success() bool {
 // returns -1.
 func (j *Job) ExitStatus() int {
 	j.Wait()
-	if element := j.lastJob(); element != nil {
-		return element.jobinfo.ExitStatus
+	if task := j.lastJob(); task != nil {
+		return task.jobinfo.ExitStatus
 	}
 	return -1
 }
@@ -355,11 +355,11 @@ func (j *Job) ExitStatus() int {
 // given function by providing the DRMAA2 job interface.
 func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 	j.lastError = nil
-	if element := j.lastJob(); element != nil && element.job != nil {
-		element.terminationError = element.job.WaitTerminated(drmaa2interface.InfiniteTime)
-		element.terminated = true
-		element.jobinfo, element.jobinfoError = element.job.GetJobInfo()
-		f(element.job)
+	if task := j.lastJob(); task != nil && task.job != nil {
+		task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
+		task.terminated = true
+		task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
+		f(task.job)
 	} else {
 		j.lastError = errors.New("job not available")
 	}

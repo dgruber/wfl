@@ -67,7 +67,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 			goPath + "/src/github.com/mitchellh/reflectwalk":   "/go/src/github.com/mitchellh/reflectwalk"},
 	}
 
-	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image, DBFile: "tmp2.db"})))
+	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})))
 
 	return testApps, jtemplate, job
 }
@@ -95,10 +95,6 @@ func main() {
 
 	fmt.Println("Building examples in golang:latest Docker containers")
 	executeWorkflow(createDockerBuild("golang:latest"))
-
-	// cleanup tmp job database
-	os.Remove("tmp.db")
-	os.Remove("tmp2.db")
 
 	os.Exit(exitCode)
 }

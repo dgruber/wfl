@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
-	"os"
 )
 
 func main() {
@@ -23,7 +22,6 @@ func main() {
 	//  Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default.", Moby, 2017
 	//
 	ctx := wfl.NewDockerContext().OnError(func(e error) { panic(e) })
-	defer os.Remove("tmp.db")
 
 	wfl.NewWorkflow(ctx).OnError(func(e error) {
 		panic("error during workflow creation " + e.Error())
@@ -36,8 +34,7 @@ func main() {
 	// when setting golang as default Docker image JobCategory is not required to
 	// be set and the simplified Run() methods can be used.
 
-	ctx2 := wfl.NewDockerContextByCfg(wfl.DockerConfig{DBFile: "2.db", DefaultDockerImage: "golang"})
-	defer os.Remove("2.db")
+	ctx2 := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang"})
 
 	wfl.NewWorkflow(ctx2).OnError(func(e error) {
 		panic("error during workflow creation " + e.Error())
