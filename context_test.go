@@ -62,6 +62,16 @@ var _ = Describe("Context", func() {
 			})
 		})
 
+		Context("Temporary DB file", func() {
+			It("should always be a different filename", func() {
+				files := make(map[string]interface{}, 100)
+				for i := 0; i < 100; i++ {
+					file := wfl.TmpFile()
+					Ω(files).ShouldNot(ContainElement(file))
+				}
+			})
+		})
+
 		Context("Test Contexts", func() {
 			It("should be possible to create an empty test context", func() {
 				ctx := wfl.DRMAA2SessionManagerContext(nil)

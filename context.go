@@ -32,17 +32,27 @@ type ProcessConfig struct {
 	DBFile string
 }
 
-func tmpFile() string {
-	rand := time.Now().Nanosecond() + os.Getpid()
-	return filepath.Join(os.TempDir(), fmt.Sprintf("wfl%d.db", rand))
+func TmpFile() string {
+	var tmpFile string
+	for i := 0; i < 1000; i++ {
+		rand := fmt.Sprint("%d%d%d", time.Now().Nanosecond(), os.Getpid(), i)
+		tmpFile = filepath.Join(os.TempDir(), fmt.Sprintf("wfl%s.db", rand))
+		if _, err := os.Stat(tmpFile); os.IsNotExist(err) {
+			break
+		}
+	}
+	if tmpFile == "" {
+		panic("could not create tmp workflow database filename")
+	}
+	return tmpFile
 }
 
 func NewProcessContext() *Context {
-	return NewProcessContextByCfg(ProcessConfig{DBFile: tmpFile()})
+	return NewProcessContextByCfg(ProcessConfig{DBFile: ""})
 }
 func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 	if cfg.DBFile == "" {
-		cfg.DBFile = tmpFile()
+		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewDefaultSessionManager(cfg.DBFile)
 	return &Context{sm: sm, ctxCreationErr: err}
@@ -54,12 +64,12 @@ type DockerConfig struct {
 }
 
 func NewDockerContext() *Context {
-	return NewDockerContextByCfg(DockerConfig{DBFile: tmpFile(), DefaultDockerImage: ""})
+	return NewDockerContextByCfg(DockerConfig{DBFile: "", DefaultDockerImage: ""})
 }
 
 func NewDockerContextByCfg(cfg DockerConfig) *Context {
 	if cfg.DBFile == "" {
-		cfg.DBFile = tmpFile()
+		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewDockerSessionManager(cfg.DBFile)
 	return &Context{sm: sm, defaultDockerImage: cfg.DefaultDockerImage, ctxCreationErr: err}
@@ -77,13 +87,13 @@ func NewCloudFoundryContext() *Context {
 	cfg.APIAddr = os.Getenv("CF_API")
 	cfg.User = os.Getenv("CF_USER")
 	cfg.Password = os.Getenv("CF_PASSWORD")
-	cfg.DBFile = tmpFile()
+	cfg.DBFile = ""
 	return NewCloudFoundryContextByCfg(cfg)
 }
 
 func NewCloudFoundryContextByCfg(cfg CloudFoundryConfig) *Context {
 	if cfg.DBFile == "" {
-		cfg.DBFile = tmpFile()
+		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewCloudFoundrySessionManager(cfg.APIAddr, cfg.User, cfg.Password, cfg.DBFile)
 	return &Context{sm: sm, ctxCreationErr: err}
