@@ -23,11 +23,11 @@ jobs:
 
       # specify any bash command here prefixed with `run: `
       - run: 
-        name: Get dependencies
-        command: go get -v -t -d ./...
+          name: Get dependencies
+          command: go get -v -t -d ./...
       - run: 
-        name: Run all tests
-        command: go test -v ./...
+          name: Run all tests
+          command: go test -v ./...
       - run: 
-        name: Build all examples using wfl itself
-        command: cd test && go run test.go
+          name: Build all examples using wfl itself
+          command: cd test && go run test.go
