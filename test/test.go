@@ -69,11 +69,17 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 
 	ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})
 	if ctx.HasError() {
-		fmt.Printf("Docker not supported: %s\n", ctx.Error())
+		fmt.Printf("Docker context not supported: %s\n", ctx.Error())
 		testApps = nil
 	}
 
-	job := wfl.NewJob(wfl.NewWorkflow(ctx))
+	wf := wfl.NewWorkflow(ctx)
+	if wf.HasError() {
+		fmt.Printf("Docker workflow not supported: %s\n", ctx.Error())
+		testApps = nil
+	}
+
+	job := wfl.NewJob(wf)
 
 	return testApps, jtemplate, job
 }
