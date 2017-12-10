@@ -67,7 +67,13 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 			goPath + "/src/github.com/mitchellh/reflectwalk":   "/go/src/github.com/mitchellh/reflectwalk"},
 	}
 
-	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})))
+	ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})
+	if ctx.HasError() {
+		fmt.Printf("Docker not supported: %s\n", ctx.Error())
+		testApps = nil
+	}
+
+	job := wfl.NewJob(wfl.NewWorkflow(ctx))
 
 	return testApps, jtemplate, job
 }

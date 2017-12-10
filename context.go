@@ -28,6 +28,13 @@ func (c *Context) Error() error {
 	return c.ctxCreationErr
 }
 
+func (c *Context) HasError() bool {
+	if c.ctxCreationErr != nil {
+		return true
+	}
+	return false
+}
+
 type ProcessConfig struct {
 	DBFile string
 }

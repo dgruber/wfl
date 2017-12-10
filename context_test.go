@@ -23,6 +23,7 @@ var _ = Describe("Context", func() {
 				err := ctx.Error()
 				Ω(err).Should(BeNil())
 				Ω(ctx).ShouldNot(BeNil())
+				Ω(ctx.HasError()).Should(BeFalse())
 			})
 			It("should be possible to create a process context with configuration", func() {
 				ctx := wfl.NewProcessContextByCfg(wfl.ProcessConfig{DBFile: "tmp.db"})
