@@ -67,7 +67,7 @@ If the Docker context needs to be configured with a default Docker image
 then the _ContextByCfg()_ can be called.
 
 ```go
-    wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest", DBFile: "tmp2.db"})
+    wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})
 ```
 
 When you want to run the workflow as Cloud Foundry Tasks the _CloudFoundryContext_ can be used:
