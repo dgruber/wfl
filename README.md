@@ -17,6 +17,12 @@ backends without changing the workflow itself.
 _wfl_ does not come with many features but is simple to use and enough to define and
 run jobs with dependencies.
 
+Install all dependencies:
+
+```go
+    go get -v -t -d ./...
+```
+
 In its simplest form a process can be started and waited for:
 
 ```go
