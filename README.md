@@ -29,6 +29,18 @@ In its simplest form a process can be started and waited for:
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("convert", "image.jpg", "image.png").Wait()
 ```
 
+A Docker container without a run command which exposes ports can be defined in a _JobTemplate_
+and started with (expecting that the Docker image is pulled already):
+
+```go
+    jt := drmaa2interface.JobTemplate{
+        JobCategory: "swaggerapi/swagger-editor",
+    }
+    jt.ExtensionList = map[string]string{"exposedPorts": "80:8080/tcp"}
+    
+    wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContext())).RunT(jt).Wait()
+```
+
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
 management - moving results from one job to another. That's deliberately not implemented.
