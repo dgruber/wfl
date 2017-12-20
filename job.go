@@ -406,8 +406,14 @@ func (j *Job) OnSuccess(f func(job drmaa2interface.Job)) *Job {
 // OnSuccessRun submits a job when the previous job ended in the
 // job state drmaa2interface.Done.
 func (j *Job) OnSuccessRun(cmd string, args ...string) *Job {
+	return j.OnSuccessRunT(drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args})
+}
+
+// OnSuccessRunT submits a job when the previous job ended in the
+// job state drmaa2interface.Done.
+func (j *Job) OnSuccessRunT(jt drmaa2interface.JobTemplate) *Job {
 	if waitForJobEndAndState(j) == drmaa2interface.Done {
-		j.Run(cmd, args...)
+		j.RunT(jt)
 	}
 	return j
 }
@@ -428,8 +434,14 @@ func (j *Job) OnFailure(f func(job drmaa2interface.Job)) *Job {
 // OnFailureRun submits a job when the previous job ended in a state
 // different than drmaa2interface.Done.
 func (j *Job) OnFailureRun(cmd string, args ...string) *Job {
+	return j.OnFailureRunT(drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args})
+}
+
+// OnFailureRunT submits a job when the previous job ended in a state
+// different than drmaa2interface.Done.
+func (j *Job) OnFailureRunT(jt drmaa2interface.JobTemplate) *Job {
 	if waitForJobEndAndState(j) != drmaa2interface.Done {
-		j.Run(cmd, args...)
+		j.RunT(jt)
 	}
 	return j
 }
