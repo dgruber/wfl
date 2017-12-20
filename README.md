@@ -130,25 +130,25 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 
 Job submission:
 
-* Run() -> Starts a process, container, or submits a job and comes back immediately
+* Run() -> Starts a process, container, or submits a task and comes back immediately
 * RunT() -> Like above but with a JobTemplate as parameter
 * Resubmit() -> Run().Run().Run()...
-* RunEvery() -> Submits a job every d time.Duration
+* RunEvery() -> Submits a task every d time.Duration
 * RunEveryT()
 
 Job control:
 
-* Suspend() -> Stops a process from execution (SIGTSTP)...
-* Resume() -> Continues a process (SIGCONT)...
+* Suspend() -> Stops a task from execution (e.g. sending SIGTSTP to the process)...
+* Resume() -> Continues a task (e.g. sending SIGCONT)...
 * Kill()
 
 Function execution:
 
 * Do() -> Executes a function
 * Then() -> Waits for end of process and executes function
-* OnSuccess() -> Executes a function if the process / container run successfully (exit code 0)
-* OnFailure() -> Executes a function if the process / container failed (exit code != 0)
-* OnError() -> Executes a function if the process / container could not be created
+* OnSuccess() -> Executes a function if the task run successfully (exit code 0)
+* OnFailure() -> Executes a function if the task failed (exit code != 0)
+* OnError() -> Executes a function if the task could not be created
 
 Blocker:
 
@@ -163,7 +163,7 @@ Job flow control:
 * OnSuccessRun() // wait() + success() + run()
 * OnFailureRun()
 * Retry() // wait() + !success() + resubmit() + wait() + !success() ...
-* OneFailed() // checks if one of the jobs failed
+* AnyFailed() // checks if one of the tasks in the job failed
 
 Job status and general checks:
 

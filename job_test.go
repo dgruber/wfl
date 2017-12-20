@@ -179,9 +179,9 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should detect when one job failed", func() {
-			failed := wf.Run("sleep", "0").Run("date", "invalidformat").Run("sleep", "0").Synchronize().OneFailed()
+			failed := wf.Run("sleep", "0").Run("date", "invalidformat").Run("sleep", "0").Synchronize().AnyFailed()
 			Ω(failed).Should(BeTrue())
-			failed = wf.Run("sleep", "0").Run("sleep", "0").Run("sleep", "0").Synchronize().OneFailed()
+			failed = wf.Run("sleep", "0").Run("sleep", "0").Run("sleep", "0").Synchronize().AnyFailed()
 			Ω(failed).Should(BeFalse())
 		})
 

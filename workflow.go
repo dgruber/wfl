@@ -14,6 +14,9 @@ type Workflow struct {
 	workflowCreationError error
 }
 
+// NewWorkflow creates a new Workflow based on the given context.
+// Internally it creates a DRMAA2 JobSession which is used for
+// separating jobs.
 func NewWorkflow(context *Context) *Workflow {
 	var err error
 	if context == nil {

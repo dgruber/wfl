@@ -124,6 +124,10 @@ func (j *Job) JobInfo() drmaa2interface.JobInfo {
 	return ji
 }
 
+// JobInfos returns all JobInfo objects of all tasks/job run in the
+// workflow. JobInfo contains run-time details of the jobs. The
+// availability of the values depends on the underlying DRMAA2 implementation
+// of the execution Context.
 func (j *Job) JobInfos() []drmaa2interface.JobInfo {
 	jis := make([]drmaa2interface.JobInfo, 0, len(j.tasklist))
 	for _, task := range j.tasklist {
@@ -159,7 +163,7 @@ func (j *Job) Run(cmd string, args ...string) *Job {
 	return j.RunT(jt)
 }
 
-// Run submits a job given specified with the JobTemplate.
+// RunT submits a job given specified with the JobTemplate.
 func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	if err := j.checkCtx(); err != nil {
 		j.lastError = err
@@ -216,7 +220,7 @@ func (j *Job) Kill() *Job {
 	return j
 }
 
-// Returns the error if occurred during last job operation.
+// LastError returns the error if occurred during last job operation.
 func (j *Job) LastError() error {
 	return j.lastError
 }
@@ -239,8 +243,8 @@ func (j *Job) Resubmit(r int) *Job {
 	return j
 }
 
-// OneFailed returns true when one job in the whole chain failed.
-func (j *Job) OneFailed() bool {
+// AnyFailed returns true when at least job in the whole chain failed.
+func (j *Job) AnyFailed() bool {
 	for _, task := range j.tasklist {
 		if task.job.GetState() == drmaa2interface.Failed {
 			return true
