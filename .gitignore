@@ -17,6 +17,7 @@
 
 privateManifest.yml
 
+shell
 notifier
 examples/cloudfoundry/cloudfoundry
 examples/docker/docker

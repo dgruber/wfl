@@ -27,6 +27,7 @@ func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job
 		"template":     "../examples/template/template.go",
 		"parallel":     "../examples/parallel/parallel.go",
 		"notifier":     "../examples/notifier/notifier.go",
+		"shell":        "../examples/shell/shell.go",
 	}
 
 	jtemplate := drmaa2interface.JobTemplate{
@@ -50,7 +51,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 		"docker":       "/go/src/github.com/dgruber/wfl/examples/docker/docker.go",
 		"template":     "/go/src/github.com/dgruber/wfl/examples/template/template.go",
 		"parallel":     "/go/src/github.com/dgruber/wfl/examples/parallel/parallel.go",
-		"notifier":     "/go/src/github.com/dgruber/wfl/examples/notifier/notifier.go",
+		"shell":        "/go/src/github.com/dgruber/wfl/examples/shell/shell.go",
 	}
 
 	goPath := os.Getenv("GOPATH")
