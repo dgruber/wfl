@@ -8,6 +8,23 @@ import (
 
 func epanic(e error) { panic(e) }
 
+func start(j drmaa2interface.Job) {
+	fmt.Printf("Started job with ID: %s\n", j.GetID())
+}
+
+func success(j drmaa2interface.Job) {
+	fmt.Printf("Job with ID %s finished successfully\n", j.GetID())
+}
+
+func failure(j drmaa2interface.Job) {
+	ji, err := j.GetJobInfo()
+	exit := -1
+	if err == nil {
+		exit = ji.ExitStatus
+	}
+	fmt.Printf("Job %s failed with exit status %d\n", j.GetID(), exit)
+}
+
 func main() {
 
 	// JobName needs to be unique accross calls as containers are not removed automatically!
@@ -40,22 +57,7 @@ func main() {
 
 	wf := wfl.NewWorkflow(ctx).OnError(epanic)
 
-	wf.RunT(sleep).
-		Do(func(j drmaa2interface.Job) {
-			fmt.Printf("Started job with ID: %s\n", j.GetID())
-		}).
-		OnError(epanic).
-		OnSuccess(func(j drmaa2interface.Job) {
-			fmt.Println("Job finished successfully")
-		}).
-		OnFailure(func(j drmaa2interface.Job) {
-			ji, err := j.GetJobInfo()
-			exit := -1
-			if err == nil {
-				exit = ji.ExitStatus
-			}
-			fmt.Printf("Job %s failed with exit status %d\n", j.GetID(), exit)
-		}).
-		Wait()
+	job := wf.RunT(sleep).OnError(epanic).Do(start).OnSuccess(success).OnFailure(failure)
 
+	job.Wait()
 }
