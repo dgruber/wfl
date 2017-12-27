@@ -20,6 +20,7 @@ type task struct {
 // Job defines methods for job life-cycle management. A job is
 // always bound to a workflow which defines the context and
 // job session (logical separation of jobs) of the underlying backend.
+// The Job object allows to create an manage tasks.
 type Job struct {
 	wfl       *Workflow
 	tasklist  []*task
@@ -31,7 +32,7 @@ type Job struct {
 func NewJob(wfl *Workflow) *Job {
 	return &Job{
 		wfl:      wfl,
-		tasklist: make([]*task, 0),
+		tasklist: make([]*task, 0, 32),
 	}
 }
 
@@ -59,7 +60,7 @@ func (j *Job) jobCheck() (drmaa2interface.Job, error) {
 
 // Job Sequence Properties
 
-// TagWith tags a job with a string for identification. Global for all jobs / tasks.
+// TagWith tags a job with a string for identification. Global for all tasks of the job.
 func (j *Job) TagWith(tag string) *Job {
 	j.tag = tag
 	return j
@@ -156,14 +157,14 @@ func (j *Job) checkCtx() error {
 	return nil
 }
 
-// Run submits a job which executes the given command and args. Needs
-// to be available on the execution backend.
+// Run submits a task which executes the given command and args. The command
+// needs to be available on the execution backend.
 func (j *Job) Run(cmd string, args ...string) *Job {
 	jt := drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args}
 	return j.RunT(jt)
 }
 
-// RunT submits a job given specified with the JobTemplate.
+// RunT submits a task given specified with the JobTemplate.
 func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	if err := j.checkCtx(); err != nil {
 		j.lastError = err
@@ -180,10 +181,12 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return j
 }
 
-// Do executes a function when the previous action succeeded.
+// Do executes a function which gets the DRMAA2 job object as parameter.
+// This allows working with the low-level DRMAA2 job object.
 func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
 	if job, err := j.jobCheck(); err != nil {
-		j.lastError = err
+		// do not store error as it overrides job action errors
+		return j
 	} else {
 		f(job)
 	}
@@ -333,7 +336,7 @@ func (j *Job) Failed() bool {
 	return false
 }
 
-// Failed returns true in case the current job stated equals drmaa2interface.Done
+// Success returns true in case the current job stated equals drmaa2interface.Done
 // and the job exit status is 0.
 func (j *Job) Success() bool {
 	if j.State() == drmaa2interface.Done {
@@ -356,7 +359,8 @@ func (j *Job) ExitStatus() int {
 }
 
 // Then waits until the previous job is terminated and executes the
-// given function by providing the DRMAA2 job interface.
+// given function by providing the DRMAA2 job interface which gives
+// access to the low-level DRMAA2 job.
 func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 	j.lastError = nil
 	if task := j.lastJob(); task != nil && task.job != nil {
