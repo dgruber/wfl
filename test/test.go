@@ -64,10 +64,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 		JobCategory:   image,
 		StageInFiles: map[string]string{
 			goPath + "/src/github.com/dgruber/drmaa2interface": "/go/src/github.com/dgruber/drmaa2interface",
-			goPath + "/src/github.com/dgruber/wfl":             "/go/src/github.com/dgruber/wfl",
-			goPath + "/src/github.com/dgruber/drmaa2os":        "/go/src/github.com/dgruber/drmaa2os",
-			goPath + "/src/github.com/mitchellh/copystructure": "/go/src/github.com/mitchellh/copystructure",
-			goPath + "/src/github.com/mitchellh/reflectwalk":   "/go/src/github.com/mitchellh/reflectwalk"},
+			goPath + "/src/github.com/dgruber/wfl":             "/go/src/github.com/dgruber/wfl"},
 	}
 
 	ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})

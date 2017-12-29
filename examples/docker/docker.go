@@ -27,7 +27,7 @@ func failure(j drmaa2interface.Job) {
 
 func main() {
 
-	// JobName needs to be unique accross calls as containers are not removed automatically!
+	// JobName needs to be unique across calls as containers are not removed automatically!
 	sleep := drmaa2interface.JobTemplate{
 		//JobName:        "unique",
 		RemoteCommand:  "/bin/sh",

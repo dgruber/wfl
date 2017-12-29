@@ -1,0 +1,78 @@
+package simpletracker
+
+import (
+	"bytes"
+	"code.cloudfoundry.org/garden"
+	"code.cloudfoundry.org/garden/client"
+	"code.cloudfoundry.org/garden/client/connection"
+	"github.com/dgruber/drmaa2interface"
+)
+
+/*
+	spec, errSpec := JobTemplate2ContainerSpec(t)
+	if errSpec != nil {
+		return "", errSpec
+	}
+	container, err := CreateContainer(spec)
+
+	// store information about job
+	jt.containers[jobid] = container
+	jt.templates[jobid] = t
+*/
+
+type Container struct {
+	Spec      garden.ProcessSpec
+	Container garden.Container
+	Stdout    *bytes.Buffer
+	Stdin     *bytes.Buffer
+	PID       string
+}
+
+func JobTemplate2ContainerSpec(t drmaa2interface.JobTemplate) (garden.ProcessSpec, error) {
+	spec := garden.ProcessSpec{}
+	spec.Path = t.RemoteCommand
+	spec.Args = t.Args
+	return spec, nil
+}
+
+func Container2JobInfo(container garden.Container) (drmaa2interface.JobInfo, error) {
+	metrics, _ := container.Metrics()
+	return drmaa2interface.JobInfo{
+		ID:        "0",
+		Slots:     1,
+		QueueName: "garden",
+		CPUTime:   int64(metrics.CPUStat.Usage),
+	}, nil
+}
+
+func CreateContainer(spec garden.ProcessSpec) (Container, error) {
+	gardenClient := client.New(connection.New("tcp", "127.0.0.1:7777"))
+	container, _ := gardenClient.Create(garden.ContainerSpec{})
+	stdin := &bytes.Buffer{}
+	stdout := &bytes.Buffer{}
+	process, _ := container.Run(spec, garden.ProcessIO{
+		Stdout: stdout,
+		Stderr: stdin,
+	})
+	pid := process.ID()
+	return Container{
+		Spec:      spec,
+		Container: container,
+		Stdout:    stdout,
+		Stdin:     stdin,
+		PID:       pid,
+	}, nil
+}
+
+func DestroyContainer(container garden.Container) error {
+	return container.Stop(true)
+}
+
+func SuspendContainer(container garden.Container) error {
+	// pids := container.Info().ProcessIDs
+	return nil
+}
+
+func ResumeContainer(container Container) error {
+	return nil
+}

@@ -18,10 +18,11 @@ backends without changing the workflow itself.
 _wfl_ does not come with many features but is simple to use and enough to define and
 run jobs with dependencies.
 
-Install all dependencies:
+Dependencies of _wfl_ are vendored in. The only external package required to be installed
+manually is the _drmaa2interface_.
 
 ```go
-    go get -v -t -d ./...
+    go get github.com/dgruber/drmaa2interface
 ```
 
 In its simplest form a process can be started and waited for:

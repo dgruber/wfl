@@ -77,7 +77,7 @@ func checkConfig(cfg Config) error {
 // template. The job submission template for each job
 // is created by Template.Next(), i.e. defined by the
 // registered iterators. The Break function defines
-// the end of the stream. If Break is nil an infinit job
+// the end of the stream. If Break is nil an infinite job
 // stream is created.
 func NewStream(cfg Config, b Break) *Stream {
 	if err := checkConfig(cfg); err != nil {

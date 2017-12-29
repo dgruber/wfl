@@ -17,7 +17,7 @@ type Context struct {
 	defaultDockerImage string
 }
 
-// OnError executes a function when an error occured during
+// OnError executes a function when an error occurred during
 // context creation with the error as parameter.
 func (c *Context) OnError(f func(e error)) *Context {
 	if c.ctxCreationErr != nil {
@@ -26,12 +26,12 @@ func (c *Context) OnError(f func(e error)) *Context {
 	return c
 }
 
-// Error returns the error occured during context creation.
+// Error returns the error occurred during context creation.
 func (c *Context) Error() error {
 	return c.ctxCreationErr
 }
 
-// HasError returns true if an error during context creation happend.
+// HasError returns true if an error during context creation happened.
 func (c *Context) HasError() bool {
 	if c.ctxCreationErr != nil {
 		return true
