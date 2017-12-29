@@ -69,6 +69,8 @@ var _ = Describe("Context", func() {
 				for i := 0; i < 100; i++ {
 					file := wfl.TmpFile()
 					Ω(files).ShouldNot(ContainElement(file))
+					Ω(file).ShouldNot(ContainSubstring("%d"))
+					files[file] = file
 				}
 			})
 		})

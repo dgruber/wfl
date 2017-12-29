@@ -43,7 +43,7 @@ func (c *Context) HasError() bool {
 func TmpFile() string {
 	var tmpFile string
 	for i := 0; i < 1000; i++ {
-		rand := fmt.Sprint("%d%d%d", time.Now().Nanosecond(), os.Getpid(), i)
+		rand := fmt.Sprintf("%d%d%d", time.Now().Nanosecond(), os.Getpid(), i)
 		tmpFile = filepath.Join(os.TempDir(), fmt.Sprintf("wfl%s.db", rand))
 		if _, err := os.Stat(tmpFile); os.IsNotExist(err) {
 			break

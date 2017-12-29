@@ -3,6 +3,7 @@
 _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 
 [![CircleCI](https://circleci.com/gh/dgruber/wfl/tree/master.svg?style=svg)](https://circleci.com/gh/dgruber/wfl/tree/master)
+[![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
 operating systems, Docker, Kubernetes, Cloud Foundry, and HPC job schedulers can be
