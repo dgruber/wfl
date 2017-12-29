@@ -49,15 +49,9 @@ management - moving results from one job to another. That's deliberately not imp
 On large scale you are missing checkpoint and restart functionality or HA of the workflow 
 process itself.
 
-I created it for writing simple test applications against the underlying
-[Go drmaa2os lib](https://github.com/dgruber/drmaa2os) which is still work-in-progress
-(another free-time project) but I think it is useful also for many other cases.
-
-[Go drmaa2os lib](https://github.com/dgruber/drmaa2os) is also responsible for lots of
-the functionality (like evaluating the JobTemplate elements). So please contribute or open
-an issue over there.
-
 _wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
+
+Jobs can also be processed in [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
 
 ## Context
 
@@ -188,7 +182,7 @@ as parameters for them. In most cases only _RemoteCommand_, _Args_, _WorkingDire
 - [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
 - [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 
-The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates. It is likely to completely switch to such an abstraction later. For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
+The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
 # Examples
 

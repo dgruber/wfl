@@ -32,5 +32,8 @@ jobs:
           name: Build all examples using wfl itself
           command: cd test && go run test.go
       - run:
+          name: Code coverage file
+          command: go test -race -coverprofile=coverage.txt -covermode=atomic
+      - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
