@@ -3,22 +3,24 @@
 ## Example
 
 ```go
-	template := wfl.NewTemplate(drmaa2interface.JobTemplate{
+
+    func print(j *wfl.Job) *wfl.Job {
+	    fmt.Printf("Processing job %s\n", j.JobID())
+	    return j
+    })
+
+    template := wfl.NewTemplate(drmaa2interface.JobTemplate{
 		RemoteCommand: "/bin/sh",
 		Args:          []string{"-c", `echo Executing task $TASK_ID`},
-	}).AddIterator("tasks", wfl.NewEnvSequenceIterator("TASK_ID", 1, 1))
+    }).AddIterator("tasks", wfl.NewEnvSequenceIterator("TASK_ID", 1, 1))
 
     config := jstream.Config{
     	Template: ,
     	Workflow: wfl.NewWorkflow(wfl.NewProcessContext()),
     	BufferSize: 16,
     }
-    stream := jstream.NewStream(config, nil)
+    jstream.NewStream(config, nil).Apply(print).Synchronize().Consume()
 
-    stream.Apply(func(j *wfl.Job) *wfl.Job {
-	    fmt.Printf("Processing job %s\n", j.JobID())
-	    return j
-    }).Synchronize().Consume()
 ```
 
 Creates a stream of jobs based on the given configuration and a method which
