@@ -3,6 +3,7 @@ package wfl
 import (
 	"errors"
 	"github.com/dgruber/drmaa2interface"
+	"github.com/mitchellh/copystructure"
 	"time"
 )
 
@@ -177,7 +178,9 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	}
 	job, err := j.wfl.js.RunJob(jt)
 	j.lastError = err
-	j.tasklist = append(j.tasklist, &task{job: job, submitError: err, template: jt})
+	jobTemplate, _ := copystructure.Copy(jt)
+	j.tasklist = append(j.tasklist, &task{job: job, submitError: err,
+		template: jobTemplate.(drmaa2interface.JobTemplate)})
 	return j
 }
 
@@ -236,7 +239,9 @@ func (j *Job) Resubmit(r int) *Job {
 			job, err := j.wfl.js.RunJob(e.template)
 			j.lastError = err
 			if err == nil {
-				j.tasklist = append(j.tasklist, &task{job: job, submitError: err, template: e.template})
+				jobTemplate, _ := copystructure.Copy(e.template)
+				j.tasklist = append(j.tasklist, &task{job: job, submitError: err,
+					template: jobTemplate.(drmaa2interface.JobTemplate)})
 			}
 		} else {
 			j.lastError = errors.New("job not available")

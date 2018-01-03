@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
+	"github.com/mitchellh/copystructure"
 	"sync"
 )
 
@@ -86,8 +87,9 @@ func NewStream(cfg Config, b Break) *Stream {
 	jobs := make(chan *wfl.Job, cfg.BufferSize)
 
 	go func() {
-		for b == nil || b(cfg.Template.Jt) {
-			jobs <- wfl.NewJob(cfg.Workflow).RunT(cfg.Template.Next())
+		for b == nil || b(cfg.Template.Next()) {
+			jt, _ := copystructure.Copy(cfg.Template.Jt)
+			jobs <- wfl.NewJob(cfg.Workflow).RunT(jt.(drmaa2interface.JobTemplate))
 		}
 		close(jobs)
 	}()
@@ -98,23 +100,30 @@ func NewStream(cfg Config, b Break) *Stream {
 	}
 }
 
-func (g *Stream) apply(apply JobMap, async bool) *Stream {
+func (g *Stream) apply(apply JobMap, maxParallel int) *Stream {
+	var coroutineControl chan bool
+
+	throttle := maxParallel
+	if throttle > 0 { // if negative then do not block at all
+		coroutineControl = make(chan bool, throttle)
+	}
+
 	outch := make(chan *wfl.Job, g.config.BufferSize)
 
 	go func() {
 		var wg sync.WaitGroup
 		for job := range g.jch {
-			if async {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					apply(job)
-					outch <- job
-				}()
-			} else {
-				apply(job)
-				outch <- job
+			if throttle > 0 {
+				coroutineControl <- true // block when coroutineControl buffer is full
 			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				outch <- apply(job)
+				if throttle > 0 {
+					<-coroutineControl
+				}
+			}()
 		}
 		wg.Wait()
 		close(outch)
@@ -124,11 +133,15 @@ func (g *Stream) apply(apply JobMap, async bool) *Stream {
 }
 
 func (g *Stream) Apply(apply JobMap) *Stream {
-	return g.apply(apply, false)
+	return g.apply(apply, 1)
 }
 
 func (g *Stream) ApplyAsync(apply JobMap) *Stream {
-	return g.apply(apply, true)
+	return g.apply(apply, 0)
+}
+
+func (g *Stream) ApplyAsyncN(apply JobMap, n int) *Stream {
+	return g.apply(apply, n)
 }
 
 func (g *Stream) Consume() {
