@@ -1,10 +1,14 @@
 package cfclient
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 type RoutesResponse struct {
@@ -19,6 +23,11 @@ type RoutesResource struct {
 	Entity Route `json:"entity"`
 }
 
+type RouteRequest struct {
+	DomainGuid string `json:"domain_guid"`
+	SpaceGuid  string `json:"space_guid"`
+}
+
 type Route struct {
 	Guid                string `json:"guid"`
 	Host                string `json:"host"`
@@ -30,9 +39,20 @@ type Route struct {
 	c                   *Client
 }
 
+func (c *Client) CreateTcpRoute(routeRequest RouteRequest) (Route, error) {
+	routesResource, err := c.createRoute("/v2/routes?generate_port=true", routeRequest)
+	if nil != err {
+		return Route{}, err
+	}
+	return routesResource.Entity, nil
+}
+
 func (c *Client) ListRoutesByQuery(query url.Values) ([]Route, error) {
+	return c.fetchRoutes("/v2/routes?" + query.Encode())
+}
+
+func (c *Client) fetchRoutes(requestUrl string) ([]Route, error) {
 	var routes []Route
-	requestUrl := "/v2/routes?" + query.Encode()
 	for {
 		routesResp, err := c.getRoutesResponse(requestUrl)
 		if err != nil {
@@ -60,16 +80,51 @@ func (c *Client) getRoutesResponse(requestUrl string) (RoutesResponse, error) {
 	r := c.NewRequest("GET", requestUrl)
 	resp, err := c.DoRequest(r)
 	if err != nil {
-		return RoutesResponse{}, fmt.Errorf("Error requesting routes %v", err)
+		return RoutesResponse{}, errors.Wrap(err, "Error requesting routes")
 	}
 	resBody, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
-		return RoutesResponse{}, fmt.Errorf("Error reading routes body %v", err)
+		return RoutesResponse{}, errors.Wrap(err, "Error reading routes body")
 	}
 	err = json.Unmarshal(resBody, &routesResp)
 	if err != nil {
-		return RoutesResponse{}, fmt.Errorf("Error unmarshalling routes %v", err)
+		return RoutesResponse{}, errors.Wrap(err, "Error unmarshalling routes")
 	}
 	return routesResp, nil
+}
+
+func (c *Client) createRoute(requestUrl string, routeRequest RouteRequest) (RoutesResource, error) {
+	var routeResp RoutesResource
+	buf := bytes.NewBuffer(nil)
+	err := json.NewEncoder(buf).Encode(routeRequest)
+	if err != nil {
+		return RoutesResource{}, errors.Wrap(err, "Error creating route - failed to serialize request body")
+	}
+	r := c.NewRequestWithBody("POST", requestUrl, buf)
+	resp, err := c.DoRequest(r)
+	if err != nil {
+		return RoutesResource{}, errors.Wrap(err, "Error creating route")
+	}
+	resBody, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return RoutesResource{}, errors.Wrap(err, "Error creating route")
+	}
+	err = json.Unmarshal(resBody, &routeResp)
+	if err != nil {
+		return RoutesResource{}, errors.Wrap(err, "Error unmarshalling routes")
+	}
+	return routeResp, nil
+}
+
+func (c *Client) DeleteRoute(guid string) error {
+	resp, err := c.DoRequest(c.NewRequest("DELETE", fmt.Sprintf("/v2/routes/%s", guid)))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		return errors.Wrapf(err, "Error deleting route %s, response code: %d", guid, resp.StatusCode)
+	}
+	return nil
 }

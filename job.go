@@ -234,7 +234,7 @@ func (j *Job) LastError() error {
 // Resubmit starts the previously submitted job n-times. The jobs are
 // executed in parallel.
 func (j *Job) Resubmit(r int) *Job {
-	for i := 0; i < r; i++ {
+	for i := 0; i < r || r == -1; i++ {
 		if e := j.lastJob(); e != nil {
 			job, err := j.wfl.js.RunJob(e.template)
 			j.lastError = err

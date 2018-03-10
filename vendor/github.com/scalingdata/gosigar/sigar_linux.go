@@ -11,6 +11,8 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -25,6 +27,8 @@ var system struct {
 var Procd string
 var Sysd string
 var Etcd string
+
+const readAllDirnames = -1 // see os.File.Readdirnames doc
 
 func init() {
 	system.ticks = 100 // C.sysconf(C._SC_CLK_TCK)
@@ -343,12 +347,95 @@ func (self *NetIfaceList) Get() error {
 	return err
 }
 
+var inodeMatcher1 = regexp.MustCompile(`\Asocket:\[(\d+)\]\z`)
+var inodeMatcher2 = regexp.MustCompile(`\A\[0000\]:(\d+)\z`)
+
+func extractInode(linkName string) (uint64, error) {
+	results := inodeMatcher1.FindStringSubmatch(linkName)
+	// the inode number is held in the second result
+	if len(results) >= 2 {
+		inodeStr := results[1]
+		return strconv.ParseUint(inodeStr, 10, 64)
+	}
+	results = inodeMatcher2.FindStringSubmatch(linkName)
+	if len(results) >= 2 {
+		inodeStr := results[1]
+		return strconv.ParseUint(inodeStr, 10, 64)
+	}
+
+	return 0, errors.New("Failed to parse socket inode")
+}
+
+// Map pid to process name
+func buildPidMap(pids []int) map[int]string {
+	pidMap := make(map[int]string)
+	procState := ProcState{}
+	for _, pid := range pids {
+		err := procState.Get(pid)
+		if err == nil {
+			pidMap[pid] = procState.Name
+		}
+	}
+	return pidMap
+}
+
+func populatePidProcessName(netConnsPtr *[]NetConn) {
+	// Gather the list of pids
+	pids := ProcList{}
+	err := pids.Get()
+	if err != nil {
+		return
+	}
+
+	// For each process, read the links under the `fd` dir. If the linkName matches a specific form,
+	// the inode number is embedded in the name. See netstat source:
+	// https://github.com/ecki/net-tools/blob/3f170bff115303e92319791cbd56371e33dcbf6d/netstat.c#L349
+	// Any discovered inodes are paired with the pid to match below
+	inodeCache := make(map[uint64]int)
+	for _, pid := range pids.List {
+		// Open the directory and list the links, ignoring all errors. We won't be able to read
+		// non-owned directories unless we're root, so much of the time the open of `fd` will fail.
+		fdDir := procFileName(pid, "fd")
+		dir, err := os.Open(fdDir)
+		if err == nil {
+			names, err := dir.Readdirnames(readAllDirnames)
+			if err == nil {
+				for _, name := range names {
+					linkName, err := os.Readlink(filepath.Join(fdDir, name))
+					if err == nil {
+						inode, err := extractInode(linkName)
+						if err == nil {
+							inodeCache[inode] = pid
+						}
+					}
+				}
+			}
+			_ = dir.Close()
+		}
+	}
+
+	// Gather pid process names
+	pidMap := buildPidMap(pids.List)
+
+	// Match netConn inodes with pids
+	netConns := *netConnsPtr
+	for i, _ := range netConns {
+		inode := netConns[i].Inode
+		if inode != 0 {
+			pid := inodeCache[inode]
+			netConns[i].Pid = pid
+			netConns[i].ProcessName = pidMap[pid]
+		}
+	}
+}
+
 func (self *NetTcpConnList) Get() error {
 	list, err := readConnList(Procd+"/net/tcp", ConnProtoTcp, 4, 17)
 	if err != nil {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -358,6 +445,7 @@ func (self *NetUdpConnList) Get() error {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -367,6 +455,7 @@ func (self *NetRawConnList) Get() error {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -376,6 +465,7 @@ func (self *NetTcpV6ConnList) Get() error {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -385,6 +475,7 @@ func (self *NetUdpV6ConnList) Get() error {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -394,6 +485,7 @@ func (self *NetRawV6ConnList) Get() error {
 		return err
 	}
 	self.List = list
+	populatePidProcessName(&self.List)
 	return nil
 }
 
@@ -443,6 +535,11 @@ func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields in
 		}
 
 		conn.RecvQueue, err = strtoull(queues[1])
+		if err != nil {
+			return true
+		}
+
+		conn.Inode, err = strtoull(fields[9])
 		if err != nil {
 			return true
 		}
@@ -595,8 +692,6 @@ func (self *ProcList) Get() error {
 		return err
 	}
 	defer dir.Close()
-
-	const readAllDirnames = -1 // see os.File.Readdirnames doc
 
 	names, err := dir.Readdirnames(readAllDirnames)
 	if err != nil {

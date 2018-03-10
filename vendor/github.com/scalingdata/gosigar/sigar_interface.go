@@ -256,14 +256,17 @@ func (self NetConnState) String() string {
 }
 
 type NetConn struct {
-	LocalAddr  net.IP
-	RemoteAddr net.IP
-	LocalPort  uint64
-	RemotePort uint64
-	SendQueue  uint64
-	RecvQueue  uint64
-	Status     NetConnState
-	Proto      NetConnProto
+	LocalAddr   net.IP
+	RemoteAddr  net.IP
+	LocalPort   uint64
+	RemotePort  uint64
+	SendQueue   uint64
+	RecvQueue   uint64
+	Status      NetConnState
+	Proto       NetConnProto
+	Inode       uint64
+	Pid         int
+	ProcessName string
 }
 
 func (self NetConn) String() string {
@@ -278,6 +281,12 @@ func (self NetConn) String() string {
 			// Some sockets (e.g. UDP) are technically not in the LISTEN state, but don't provide the remote address
 			str = fmt.Sprintf("%s %s:%d", self.Proto, self.LocalAddr, self.LocalPort)
 		}
+	}
+
+	if self.Pid != 0 && self.ProcessName != "" {
+		str += fmt.Sprintf(" by pid %d/%s", self.Pid, self.ProcessName)
+	} else if self.Pid != 0 {
+		str += fmt.Sprintf(" by pid %d", self.Pid)
 	}
 	return str
 }

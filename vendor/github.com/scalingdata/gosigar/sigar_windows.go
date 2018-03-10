@@ -25,14 +25,14 @@ import (
 // malloc them and cast them to the right type than to do the unsafe.Pointer
 // casting in Go. Returns NULL if there's an error, otherwise the pointer
 // returned needs to be free'd by the caller.
-PMIB_TCPTABLE getTcpTable(PDWORD err) {
-	PMIB_TCPTABLE pTable = (MIB_TCPTABLE *) malloc(sizeof(MIB_TCPTABLE));
+PMIB_TCPTABLE_OWNER_PID getTcpTable(PDWORD err) {
+	PMIB_TCPTABLE_OWNER_PID pTable = (MIB_TCPTABLE_OWNER_PID *) malloc(sizeof(MIB_TCPTABLE_OWNER_PID));
 	if (pTable == NULL) {
 		*err = 1;
 		return NULL;
 	}
-	DWORD size = sizeof(MIB_TCPTABLE);
-	if ((*err = GetTcpTable(pTable, &size, FALSE)) != ERROR_INSUFFICIENT_BUFFER) {
+	DWORD size = sizeof(MIB_TCPTABLE_OWNER_PID);
+	if ((*err = GetExtendedTcpTable(pTable, &size, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0)) != ERROR_INSUFFICIENT_BUFFER) {
 		if (*err == NO_ERROR) {
 			return pTable;
 		}
@@ -40,8 +40,8 @@ PMIB_TCPTABLE getTcpTable(PDWORD err) {
 		return NULL;
 	}
 	free(pTable);
-	pTable = (MIB_TCPTABLE *) malloc(size);
-	if ((*err = GetTcpTable(pTable, &size, FALSE)) != NO_ERROR) {
+	pTable = (MIB_TCPTABLE_OWNER_PID *) malloc(size);
+	if ((*err = GetExtendedTcpTable(pTable, &size, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0)) != NO_ERROR) {
 		free(pTable);
 		return NULL;
 	}
@@ -49,14 +49,14 @@ PMIB_TCPTABLE getTcpTable(PDWORD err) {
 	return pTable;
 }
 
-PMIB_UDPTABLE getUdpTable(PDWORD err) {
-	PMIB_UDPTABLE pTable = (MIB_UDPTABLE *) malloc(sizeof(MIB_UDPTABLE));
+PMIB_UDPTABLE_OWNER_PID getUdpTable(PDWORD err) {
+	PMIB_UDPTABLE_OWNER_PID pTable = (MIB_UDPTABLE_OWNER_PID *) malloc(sizeof(MIB_UDPTABLE_OWNER_PID));
 	if (pTable == NULL) {
 		*err = 1;
 		return NULL;
 	}
-	DWORD size = sizeof(MIB_UDPTABLE);
-	if ((*err = GetUdpTable(pTable, &size, FALSE)) != ERROR_INSUFFICIENT_BUFFER) {
+	DWORD size = sizeof(MIB_UDPTABLE_OWNER_PID);
+	if ((*err = GetExtendedUdpTable(pTable, &size, FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0)) != ERROR_INSUFFICIENT_BUFFER) {
 		if (*err == NO_ERROR) {
 			return pTable;
 		}
@@ -64,8 +64,8 @@ PMIB_UDPTABLE getUdpTable(PDWORD err) {
 		return NULL;
 	}
 	free(pTable);
-	pTable = (MIB_UDPTABLE *) malloc(size);
-	if ((*err = GetUdpTable(pTable, &size, FALSE)) != NO_ERROR) {
+	pTable = (MIB_UDPTABLE_OWNER_PID *) malloc(size);
+	if ((*err = GetExtendedUdpTable(pTable, &size, FALSE, AF_INET, UDP_TABLE_OWNER_PID, 0)) != NO_ERROR) {
 		free(pTable);
 		return NULL;
 	}
@@ -73,14 +73,14 @@ PMIB_UDPTABLE getUdpTable(PDWORD err) {
 	return pTable;
 }
 
-PMIB_TCP6TABLE getTcp6Table(PDWORD err) {
-	PMIB_TCP6TABLE pTable = (MIB_TCP6TABLE *) malloc(sizeof(MIB_TCP6TABLE));
+PMIB_TCP6TABLE_OWNER_PID getTcp6Table(PDWORD err) {
+	PMIB_TCP6TABLE_OWNER_PID pTable = (MIB_TCP6TABLE_OWNER_PID *) malloc(sizeof(MIB_TCP6TABLE_OWNER_PID));
 	if (pTable == NULL) {
 		*err = 1;
 		return NULL;
 	}
-	DWORD size = sizeof(MIB_TCP6TABLE);
-	if ((*err = GetTcp6Table(pTable, &size, FALSE)) != ERROR_INSUFFICIENT_BUFFER) {
+	DWORD size = sizeof(MIB_TCP6TABLE_OWNER_PID);
+	if ((*err = GetExtendedTcpTable(pTable, &size, FALSE, AF_INET6, TCP_TABLE_OWNER_PID_ALL, 0)) != ERROR_INSUFFICIENT_BUFFER) {
 		if (*err == NO_ERROR) {
 			return pTable;
 		}
@@ -88,8 +88,8 @@ PMIB_TCP6TABLE getTcp6Table(PDWORD err) {
 		return NULL;
 	}
 	free(pTable);
-	pTable = (MIB_TCP6TABLE *) malloc(size);
-	if ((*err = GetTcp6Table(pTable, &size, FALSE)) != NO_ERROR) {
+	pTable = (MIB_TCP6TABLE_OWNER_PID *) malloc(size);
+	if ((*err = GetExtendedTcpTable(pTable, &size, FALSE, AF_INET6, TCP_TABLE_OWNER_PID_ALL, 0)) != NO_ERROR) {
 		free(pTable);
 		return NULL;
 	}
@@ -97,14 +97,14 @@ PMIB_TCP6TABLE getTcp6Table(PDWORD err) {
 	return pTable;
 }
 
-PMIB_UDP6TABLE getUdp6Table(PDWORD err) {
-	PMIB_UDP6TABLE pTable = (MIB_UDP6TABLE *) malloc(sizeof(MIB_UDP6TABLE));
+PMIB_UDP6TABLE_OWNER_PID getUdp6Table(PDWORD err) {
+	PMIB_UDP6TABLE_OWNER_PID pTable = (MIB_UDP6TABLE_OWNER_PID *) malloc(sizeof(MIB_UDP6TABLE_OWNER_PID));
 	if (pTable == NULL) {
 		*err = 1;
 		return NULL;
 	}
-	DWORD size = sizeof(MIB_UDP6TABLE);
-	if ((*err = GetUdp6Table(pTable, &size, FALSE)) != ERROR_INSUFFICIENT_BUFFER) {
+	DWORD size = sizeof(MIB_UDP6TABLE_OWNER_PID);
+	if ((*err = GetExtendedUdpTable(pTable, &size, FALSE, AF_INET6, UDP_TABLE_OWNER_PID, 0)) != ERROR_INSUFFICIENT_BUFFER) {
 		if (*err == NO_ERROR) {
 			return pTable;
 		}
@@ -112,8 +112,8 @@ PMIB_UDP6TABLE getUdp6Table(PDWORD err) {
 		return NULL;
 	}
 	free(pTable);
-	pTable = (MIB_UDP6TABLE *) malloc(size);
-	if ((*err = GetUdp6Table(pTable, &size, FALSE)) != NO_ERROR) {
+	pTable = (MIB_UDP6TABLE_OWNER_PID *) malloc(size);
+	if ((*err = GetExtendedUdpTable(pTable, &size, FALSE, AF_INET6, UDP_TABLE_OWNER_PID, 0)) != NO_ERROR) {
 		free(pTable);
 		return NULL;
 	}
@@ -659,41 +659,68 @@ func UlongToBytes(addr C.u_long) []byte {
 	return []byte{byte((addr & 0xFF000000) >> 24), byte((addr & 0x00FF0000) >> 16), byte((addr & 0x0000FF00) >> 8), byte(addr & 0x000000FF)}
 }
 
-func In6AddrToBytes(addr C.IN6_ADDR) []byte {
+func In6AddrToBytes(addr [16]C.UCHAR) []byte {
 	outputAddr := make([]byte, 16)
 	for i := 0; i < 16; i++ {
-		outputAddr[i] = byte(addr.u[i])
+		outputAddr[i] = byte(addr[i])
 	}
 	return outputAddr
 }
 
 /* Helper methods to access rows of the MIB tables - Go doesn't know the size of the row arrays, we have to compute the offsets ourselves */
-func tcpTableElement(table C.PMIB_TCPTABLE, index C.DWORD) C.PMIB_TCPROW {
+func tcpTableElement(table C.PMIB_TCPTABLE_OWNER_PID, index C.DWORD) C.PMIB_TCPROW_OWNER_PID {
 	if index >= table.dwNumEntries {
 		return nil
 	}
-	return C.PMIB_TCPROW(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
+	return C.PMIB_TCPROW_OWNER_PID(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
 }
 
-func udpTableElement(table C.PMIB_UDPTABLE, index C.DWORD) C.PMIB_UDPROW {
+func udpTableElement(table C.PMIB_UDPTABLE_OWNER_PID, index C.DWORD) C.PMIB_UDPROW_OWNER_PID {
 	if index >= table.dwNumEntries {
 		return nil
 	}
-	return C.PMIB_UDPROW(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
+	return C.PMIB_UDPROW_OWNER_PID(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
 }
 
-func tcp6TableElement(table C.PMIB_TCP6TABLE, index C.DWORD) C.PMIB_TCP6ROW {
+func tcp6TableElement(table C.PMIB_TCP6TABLE_OWNER_PID, index C.DWORD) C.PMIB_TCP6ROW_OWNER_PID {
 	if index >= table.dwNumEntries {
 		return nil
 	}
-	return C.PMIB_TCP6ROW(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
+	return C.PMIB_TCP6ROW_OWNER_PID(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
 }
 
-func udp6TableElement(table C.PMIB_UDP6TABLE, index C.DWORD) C.PMIB_UDP6ROW {
+func udp6TableElement(table C.PMIB_UDP6TABLE_OWNER_PID, index C.DWORD) C.PMIB_UDP6ROW_OWNER_PID {
 	if index >= table.dwNumEntries {
 		return nil
 	}
-	return C.PMIB_UDP6ROW(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
+	return C.PMIB_UDP6ROW_OWNER_PID(unsafe.Pointer(uintptr(unsafe.Pointer(&table.table)) + unsafe.Sizeof(table.table[0])*uintptr(index)))
+}
+
+func getPidToProcessNameMap() (map[int]string, error) {
+	// Query all processes
+	var procs []Win32_Process
+	whereClause := ""
+	query := wmi.CreateQuery(&procs, whereClause)
+	err := wmiClient.Query(query, &procs)
+	if err != nil {
+		return nil, err
+	}
+
+	pidMap := make(map[int]string)
+	for _, proc := range procs {
+		pidMap[int(proc.ProcessId)] = proc.Name
+	}
+	return pidMap, nil
+}
+
+func populateProcessName(netConnsPtr *[]NetConn) {
+	pidMap, pidErr := getPidToProcessNameMap()
+	if pidErr == nil {
+		netConns := *netConnsPtr
+		for i, _ := range netConns {
+			netConns[i].ProcessName = pidMap[netConns[i].Pid]
+		}
+	}
 }
 
 func (self *NetTcpConnList) Get() error {
@@ -718,9 +745,12 @@ func (self *NetTcpConnList) Get() error {
 			RemoteAddr: UlongToBytes(remoteAddr),
 			LocalPort:  uint64(C.ntohs(C.u_short(elem.dwLocalPort))),
 			RemotePort: uint64(C.ntohs(C.u_short(elem.dwRemotePort))),
+			Pid:        int(elem.dwOwningPid),
 		}
 		self.List = append(self.List, conn)
 	}
+
+	populateProcessName(&self.List)
 	return nil
 }
 
@@ -742,9 +772,12 @@ func (self *NetUdpConnList) Get() error {
 			LocalAddr: UlongToBytes(localAddr),
 			LocalPort: uint64(C.ntohs(C.u_short(elem.dwLocalPort))),
 			Proto:     ConnProtoUdp,
+			Pid:       int(elem.dwOwningPid),
 		}
 		self.List = append(self.List, conn)
 	}
+
+	populateProcessName(&self.List)
 	return nil
 }
 
@@ -767,14 +800,17 @@ func (self *NetTcpV6ConnList) Get() error {
 		}
 		conn := NetConn{
 			Proto:      ConnProtoTcp,
-			Status:     convertTcpState(C.DWORD(elem.State)),
-			LocalAddr:  In6AddrToBytes(elem.LocalAddr),
-			RemoteAddr: In6AddrToBytes(elem.RemoteAddr),
+			Status:     convertTcpState(C.DWORD(elem.dwState)),
+			LocalAddr:  In6AddrToBytes(elem.ucLocalAddr),
+			RemoteAddr: In6AddrToBytes(elem.ucRemoteAddr),
 			LocalPort:  uint64(C.ntohs(C.u_short(elem.dwLocalPort))),
 			RemotePort: uint64(C.ntohs(C.u_short(elem.dwRemotePort))),
+			Pid:        int(elem.dwOwningPid),
 		}
 		self.List = append(self.List, conn)
 	}
+
+	populateProcessName(&self.List)
 	return nil
 }
 
@@ -792,12 +828,15 @@ func (self *NetUdpV6ConnList) Get() error {
 			return fmt.Errorf("Error getting connection %v, beyond array bounds", i)
 		}
 		conn := NetConn{
-			LocalAddr: In6AddrToBytes(elem.dwLocalAddr),
+			LocalAddr: In6AddrToBytes(elem.ucLocalAddr),
 			LocalPort: uint64(C.ntohs(C.u_short(elem.dwLocalPort))),
 			Proto:     ConnProtoUdp,
+			Pid:       int(elem.dwOwningPid),
 		}
 		self.List = append(self.List, conn)
 	}
+
+	populateProcessName(&self.List)
 	return nil
 }
 

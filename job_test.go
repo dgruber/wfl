@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"os"
 	"time"
@@ -450,6 +451,31 @@ var _ = Describe("Job", func() {
 			job.JobInfo()
 			err := job.LastError()
 			Ω(err).ShouldNot(BeNil())
+		})
+
+	})
+
+	Context("Use Cases", func() {
+
+		It("should return the right exit code", func() {
+			var err error
+			var exitStatus int
+
+			job := makeWfl().Run("./test_scripts/exit.sh", "13")
+			job.OnError(func(e error) { err = e })
+			Ω(err).Should(BeNil())
+
+			job.OnSuccess(func(j drmaa2interface.Job) { err = errors.New("should have failed") })
+			Ω(err).Should(BeNil())
+			Ω(job.ExitStatus()).Should(BeNumerically("==", 13))
+
+			job.OnFailure(func(j drmaa2interface.Job) {
+				ji, errJi := j.GetJobInfo()
+				err = errJi
+				exitStatus = ji.ExitStatus
+			})
+			Ω(err).Should(BeNil())
+			Ω(exitStatus).Should(BeNumerically("==", 13))
 		})
 
 	})

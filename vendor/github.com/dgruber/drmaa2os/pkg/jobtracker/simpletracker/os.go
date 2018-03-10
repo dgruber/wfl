@@ -31,6 +31,8 @@ func restoreEnv(env map[string]string) {
 func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChannel chan JobEvent) (int, error) {
 	cmd := exec.Command(t.RemoteCommand, t.Args...)
 
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 	if valid, err := validateJobTemplate(t); valid == false {
 		return 0, err
 	}
@@ -121,13 +123,13 @@ func stateByPid(pid int) (drmaa2interface.JobState, error) {
 }
 
 func KillPid(pid int) error {
-	return syscall.Kill(pid, syscall.SIGKILL)
+	return syscall.Kill(-pid, syscall.SIGKILL)
 }
 
 func SuspendPid(pid int) error {
-	return syscall.Kill(pid, syscall.SIGTSTP)
+	return syscall.Kill(-pid, syscall.SIGTSTP)
 }
 
 func ResumePid(pid int) error {
-	return syscall.Kill(pid, syscall.SIGCONT)
+	return syscall.Kill(-pid, syscall.SIGCONT)
 }
