@@ -35,6 +35,17 @@ jobs:
       - task: test
         file: wfl/ci/tasks/test_wfl.yml
 
+  - name: testing_jstream
+    public: true
+    plan:
+      - get: wfl
+        passed: [testing]
+        trigger: true
+      - get: drmaa2interface
+        passed: [testing]
+        trigger: true
+      - task: test
+        file: wfl/ci/tasks/test_jstream.yml
 
   - name: examples_build
     public: true

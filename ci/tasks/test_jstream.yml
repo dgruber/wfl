@@ -1,0 +1,25 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: golang, tag: "latest"}
+
+inputs:
+- name: wfl 
+- name: drmaa2interface
+
+run:
+  path: sh
+  args:
+  - -exc
+  - |
+    set -e -x
+    export GOPATH=$PWD
+    mkdir -p ./src/github.com/dgruber
+    cp -r ./wfl ./src/github.com/dgruber/wfl
+    cp -r ./drmaa2interface ./src/github.com/dgruber/drmaa2interface
+    cd src/github.com/dgruber/wfl/jstream
+    go version
+    go test -v
+     
