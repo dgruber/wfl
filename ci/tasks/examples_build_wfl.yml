@@ -1,0 +1,34 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: golang, tag: "latest"}
+
+inputs:
+- name: wfl 
+- name: drmaa2interface
+
+run:
+  path: sh
+  args:
+  - -exc
+  - |
+    set -e -x
+    export GOPATH=$PWD
+    mkdir -p ./src/github.com/dgruber/wfl
+    cp -r ./wfl ./src/github.com/dgruber/
+    cp -r ./drmaa2interface ./src/github.com/dgruber/drmaa2interface
+    cd src/github.com/dgruber/wfl
+    go version
+    go build examples/cloudfoundry/cloudfoundry.go
+    go build examples/docker/docker.go
+    go build examples/notifier/notifier.go
+    go build examples/parallel/parallel.go
+    go build examples/shell/shell.go
+    go build examples/simple/simple.go
+    go build examples/stream/stream.go
+    go build examples/template/template.go
+    go build examples/touchy/touchy.go
+ 
+     

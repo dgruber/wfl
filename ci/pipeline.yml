@@ -1,0 +1,49 @@
+---
+resources:
+  - name: wfl
+    type: git
+    source:
+      uri: https://github.com/dgruber/wfl.git
+      branch: master
+
+  - name: drmaa2interface
+    type: git
+    source:
+      uri: https://github.com/dgruber/drmaa2interface.git
+      branch: master
+
+jobs:
+  - name: building
+    public: true
+    plan:
+      - get: wfl 
+        trigger: true
+      - get: drmaa2interface
+        trigger: true
+      - task: build
+        file: wfl/ci/tasks/build_wfl.yml
+
+  - name: testing
+    public: true
+    plan:
+      - get: wfl
+        passed: [building]
+        trigger: true
+      - get: drmaa2interface
+        passed: [building]
+        trigger: true
+      - task: test
+        file: wfl/ci/tasks/test_wfl.yml
+
+
+  - name: examples_build
+    public: true
+    plan:
+      - get: wfl
+        passed: [testing]
+        trigger: true
+      - get: drmaa2interface
+        passed: [testing]
+        trigger: true
+      - task: test
+        file: wfl/ci/tasks/examples_build_wfl.yml
