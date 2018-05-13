@@ -33,10 +33,7 @@ func (c *Context) Error() error {
 
 // HasError returns true if an error during context creation happened.
 func (c *Context) HasError() bool {
-	if c.ctxCreationErr != nil {
-		return true
-	}
-	return false
+	return c.ctxCreationErr != nil
 }
 
 // TmpFile returns a path to a tmp file in the tmp dir which does not exist yet.

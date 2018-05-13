@@ -54,10 +54,7 @@ func (w *Workflow) Error() error {
 // HasError returns true if there was an error during creating a job session
 // or opening a job session.
 func (w *Workflow) HasError() bool {
-	if w.workflowCreationError != nil {
-		return true
-	}
-	return false
+	return w.workflowCreationError != nil
 }
 
 // Run submits the first job in the workflow. Same as NewJob(w).Run().

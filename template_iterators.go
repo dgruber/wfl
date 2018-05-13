@@ -20,6 +20,8 @@ func NewEnvSequenceIterator(env string, start, incr int) Iterator {
 	}
 }
 
+// NewTimeIterator returns a template iterator which return a job
+// template every d time.
 func NewTimeIterator(d time.Duration) Iterator {
 	ch := time.NewTicker(d).C
 	iteration := 0

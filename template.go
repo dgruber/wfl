@@ -5,7 +5,7 @@ import (
 	"github.com/mitchellh/copystructure"
 )
 
-// Template is a higher level job template for simplifying dynamically creating
+// Template is a higher level job template for simplifying creating dynamically
 // JobTemplates.
 type Template struct {
 	Jt        drmaa2interface.JobTemplate

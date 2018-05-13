@@ -231,18 +231,26 @@ func (j *Job) LastError() error {
 	return j.lastError
 }
 
+func rerunTask(j *Job, e *task) {
+	job, err := j.wfl.js.RunJob(e.template)
+	j.lastError = err
+	if err == nil {
+		jobTemplate, _ := copystructure.Copy(e.template)
+		j.tasklist = append(j.tasklist, &task{job: job, submitError: err,
+			template: jobTemplate.(drmaa2interface.JobTemplate)})
+	}
+}
+
+func replaceTask(j *Job, e *task) {
+	e.job, e.submitError = j.wfl.js.RunJob(e.template)
+}
+
 // Resubmit starts the previously submitted job n-times. The jobs are
 // executed in parallel.
 func (j *Job) Resubmit(r int) *Job {
 	for i := 0; i < r || r == -1; i++ {
 		if e := j.lastJob(); e != nil {
-			job, err := j.wfl.js.RunJob(e.template)
-			j.lastError = err
-			if err == nil {
-				jobTemplate, _ := copystructure.Copy(e.template)
-				j.tasklist = append(j.tasklist, &task{job: job, submitError: err,
-					template: jobTemplate.(drmaa2interface.JobTemplate)})
-			}
+			rerunTask(j, e)
 		} else {
 			j.lastError = errors.New("job not available")
 			break
@@ -333,12 +341,46 @@ func (j *Job) Synchronize() *Job {
 	return j
 }
 
+// ListAllFailed returns all jobs which failed. Note that it implicitly
+// waits until all tasks finished.
+func (j *Job) ListAllFailed() []drmaa2interface.Job {
+	failed := make([]drmaa2interface.Job, 0, len(j.tasklist))
+	for _, task := range j.tasklist {
+		wait(task)
+		if task.job.GetState() == drmaa2interface.Failed {
+			failed = append(failed, task.job)
+		}
+	}
+	return failed
+}
+
+// HasAnyFailed returns true if there is any failed task in the chain.
+// Note that the functions implicitly waits until all tasks finsihed.
+func (j *Job) HasAnyFailed() bool {
+	failed := j.ListAllFailed()
+	return len(failed) == 0
+}
+
+// RetryAnyFailed reruns any failed tasks in the job and replaces them
+// with the new incarnation.
+func (j *Job) RetryAnyFailed(amount int) *Job {
+	for i := 0; i < amount || amount == -1; i++ {
+		for _, task := range j.tasklist {
+			wait(task)
+			if task.job.GetState() == drmaa2interface.Failed {
+				replaceTask(j, task)
+			}
+		}
+		if !j.HasAnyFailed() {
+			break
+		}
+	}
+	return j
+}
+
 // Failed returns true in case the current job stated equals drmaa2interface.Failed
 func (j *Job) Failed() bool {
-	if j.State() == drmaa2interface.Failed {
-		return true
-	}
-	return false
+	return j.State() == drmaa2interface.Failed
 }
 
 // Success returns true in case the current job stated equals drmaa2interface.Done
@@ -385,7 +427,7 @@ func (j *Job) ThenRun(cmd string, args ...string) *Job {
 	return j.Wait().Run(cmd, args...)
 }
 
-// ThenRun waits until the previous job is terminated and executes then
+// ThenRunT waits until the previous job is terminated and executes then
 // a new job based on the given JobTemplate.
 func (j *Job) ThenRunT(jt drmaa2interface.JobTemplate) *Job {
 	return j.Wait().RunT(jt)

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"errors"
+	"fmt"
 	"github.com/dgruber/drmaa2interface"
 	"os"
 	"time"
@@ -325,6 +326,50 @@ var _ = Describe("Job", func() {
 			id := job.JobID()
 			Ω(id).ShouldNot(Equal(""))
 			Ω(job.LastError()).Should(BeNil())
+		})
+
+		It("should list failed jobs", func() {
+			job := wf.Run("sleep", "0").
+				Run("date", "unknownformat").
+				Run("sleep", "0").
+				Run("date", "unknownformat")
+			failed := job.ListAllFailed()
+			Ω(len(failed)).Should(BeNumerically("==", 2))
+
+			job = wf.Run("sleep", "0")
+			failed = job.ListAllFailed()
+			Ω(len(failed)).Should(BeNumerically("==", 0))
+
+		})
+
+		It("should signal if there is any failed jobs", func() {
+			job := wf.Run("sleep", "0").
+				Run("date", "unknownformat").
+				Run("sleep", "0").
+				Run("date", "unknownformat")
+			Ω(job.HasAnyFailed()).Should(BeTrue())
+
+			job = wf.Run("sleep", "0").
+				Run("sleep", "0")
+			Ω(job.HasAnyFailed()).Should(BeFalse())
+		})
+
+		It("should retry any failed jobs", func() {
+			job := wf.Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh").
+				Run("./test_scripts/randfail.sh")
+
+			interation := 0
+			for len(job.ListAllFailed()) > 0 {
+				fmt.Printf("retry failed jobs (%d)\n", interation)
+				interation++
+				job.RetryAnyFailed(1)
+			}
 		})
 
 		Context("JobInfo related functions", func() {
