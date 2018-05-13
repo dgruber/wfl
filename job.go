@@ -358,7 +358,7 @@ func (j *Job) ListAllFailed() []drmaa2interface.Job {
 // Note that the functions implicitly waits until all tasks finsihed.
 func (j *Job) HasAnyFailed() bool {
 	failed := j.ListAllFailed()
-	return len(failed) == 0
+	return len(failed) > 0
 }
 
 // RetryAnyFailed reruns any failed tasks in the job and replaces them
