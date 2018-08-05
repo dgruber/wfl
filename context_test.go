@@ -63,6 +63,13 @@ var _ = Describe("Context", func() {
 			})
 		})
 
+		Context("Kubernetes Context", func() {
+			It("should be possible to create a Kubernetes context", func() {
+				ctx := wfl.NewKubernetesContext()
+				Ω(ctx).ShouldNot(BeNil())
+			})
+		})
+
 		Context("Temporary DB file", func() {
 			It("should always be a different filename", func() {
 				files := make(map[string]interface{}, 100)

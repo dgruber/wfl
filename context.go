@@ -120,3 +120,24 @@ func DRMAA2SessionManagerContext(sm drmaa2interface.SessionManager) *Context {
 func ErrorTestContext() *Context {
 	return &Context{sm: nil, ctxCreationErr: errors.New("error")}
 }
+
+type KubernetesConfig struct {
+	DefaultImage string
+	DBFile       string
+}
+
+func NewKubernetesContextByCfg(cfg KubernetesConfig) *Context {
+	if cfg.DBFile == "" {
+		cfg.DBFile = TmpFile()
+	}
+	sessionManager, err := drmaa2os.NewKubernetesSessionManager(cfg.DBFile)
+	return &Context{
+		sm:                 sessionManager,
+		defaultDockerImage: cfg.DefaultImage,
+		ctxCreationErr:     err,
+	}
+}
+
+func NewKubernetesContext() *Context {
+	return NewKubernetesContextByCfg(KubernetesConfig{})
+}

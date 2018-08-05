@@ -5,18 +5,14 @@ package sigar
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 var system struct {
@@ -27,8 +23,6 @@ var system struct {
 var Procd string
 var Sysd string
 var Etcd string
-
-const readAllDirnames = -1 // see os.File.Readdirnames doc
 
 func init() {
 	system.ticks = 100 // C.sysconf(C._SC_CLK_TCK)
@@ -347,152 +341,64 @@ func (self *NetIfaceList) Get() error {
 	return err
 }
 
-var inodeMatcher1 = regexp.MustCompile(`\Asocket:\[(\d+)\]\z`)
-var inodeMatcher2 = regexp.MustCompile(`\A\[0000\]:(\d+)\z`)
-
-func extractInode(linkName string) (uint64, error) {
-	results := inodeMatcher1.FindStringSubmatch(linkName)
-	// the inode number is held in the second result
-	if len(results) >= 2 {
-		inodeStr := results[1]
-		return strconv.ParseUint(inodeStr, 10, 64)
-	}
-	results = inodeMatcher2.FindStringSubmatch(linkName)
-	if len(results) >= 2 {
-		inodeStr := results[1]
-		return strconv.ParseUint(inodeStr, 10, 64)
-	}
-
-	return 0, errors.New("Failed to parse socket inode")
-}
-
-// Map pid to process name
-func buildPidMap(pids []int) map[int]string {
-	pidMap := make(map[int]string)
-	procState := ProcState{}
-	for _, pid := range pids {
-		err := procState.Get(pid)
-		if err == nil {
-			pidMap[pid] = procState.Name
-		}
-	}
-	return pidMap
-}
-
-func populatePidProcessName(netConnsPtr *[]NetConn) {
-	// Gather the list of pids
-	pids := ProcList{}
-	err := pids.Get()
-	if err != nil {
-		return
-	}
-
-	// For each process, read the links under the `fd` dir. If the linkName matches a specific form,
-	// the inode number is embedded in the name. See netstat source:
-	// https://github.com/ecki/net-tools/blob/3f170bff115303e92319791cbd56371e33dcbf6d/netstat.c#L349
-	// Any discovered inodes are paired with the pid to match below
-	inodeCache := make(map[uint64]int)
-	for _, pid := range pids.List {
-		// Open the directory and list the links, ignoring all errors. We won't be able to read
-		// non-owned directories unless we're root, so much of the time the open of `fd` will fail.
-		fdDir := procFileName(pid, "fd")
-		dir, err := os.Open(fdDir)
-		if err == nil {
-			names, err := dir.Readdirnames(readAllDirnames)
-			if err == nil {
-				for _, name := range names {
-					linkName, err := os.Readlink(filepath.Join(fdDir, name))
-					if err == nil {
-						inode, err := extractInode(linkName)
-						if err == nil {
-							inodeCache[inode] = pid
-						}
-					}
-				}
-			}
-			_ = dir.Close()
-		}
-	}
-
-	// Gather pid process names
-	pidMap := buildPidMap(pids.List)
-
-	// Match netConn inodes with pids
-	netConns := *netConnsPtr
-	for i, _ := range netConns {
-		inode := netConns[i].Inode
-		if inode != 0 {
-			pid := inodeCache[inode]
-			netConns[i].Pid = pid
-			netConns[i].ProcessName = pidMap[pid]
-		}
-	}
-}
-
 func (self *NetTcpConnList) Get() error {
-	list, err := readConnList(Procd+"/net/tcp", ConnProtoTcp, 4, 17)
+	list, err := readConnList(Procd+"/net/tcp", 4, 17)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 func (self *NetUdpConnList) Get() error {
-	list, err := readConnList(Procd+"/net/udp", ConnProtoUdp, 4, 13)
+	list, err := readConnList(Procd+"/net/udp", 4, 13)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 func (self *NetRawConnList) Get() error {
-	list, err := readConnList(Procd+"/net/raw", ConnProtoRaw, 4, 13)
+	list, err := readConnList(Procd+"/net/raw", 4, 13)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 func (self *NetTcpV6ConnList) Get() error {
-	list, err := readConnList(Procd+"/net/tcp6", ConnProtoTcp, 16, 17)
+	list, err := readConnList(Procd+"/net/tcp6", 16, 17)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 func (self *NetUdpV6ConnList) Get() error {
-	list, err := readConnList(Procd+"/net/udp6", ConnProtoUdp, 16, 13)
+	list, err := readConnList(Procd+"/net/udp6", 16, 13)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 func (self *NetRawV6ConnList) Get() error {
-	list, err := readConnList(Procd+"/net/raw6", ConnProtoRaw, 16, 13)
+	list, err := readConnList(Procd+"/net/raw6", 16, 13)
 	if err != nil {
 		return err
 	}
 	self.List = list
-	populatePidProcessName(&self.List)
 	return nil
 }
 
 /* Reads the format of the /proc/net/<proto> files, which have 2 header lines and a
    list of open connections. Different protocols have different numbers of trailing fields,
    but the first 5 are the same. */
-func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields int) ([]NetConn, error) {
+func readConnList(listFile string, ipSizeBytes, numFields int) ([]NetConn, error) {
 	connList := make([]NetConn, 0)
 	err := readFile(listFile, func(line string) bool {
 		fields := strings.Fields(line)
@@ -506,12 +412,12 @@ func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields in
 
 		var err error
 		var conn NetConn
-		conn.LocalAddr, conn.LocalPort, err = ReadConnIp(fields[1], ipSizeBytes)
+		conn.LocalAddr, conn.LocalPort, err = readConnIp(fields[1], ipSizeBytes)
 		if err != nil {
 			return true
 		}
 
-		conn.RemoteAddr, conn.RemotePort, err = ReadConnIp(fields[2], ipSizeBytes)
+		conn.RemoteAddr, conn.RemotePort, err = readConnIp(fields[2], ipSizeBytes)
 		if err != nil {
 			return true
 		}
@@ -522,8 +428,6 @@ func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields in
 		}
 
 		conn.Status = NetConnState(status)
-		conn.Proto = proto
-
 		queues := strings.Split(fields[4], ":")
 		if len(queues) != 2 {
 			return true
@@ -539,11 +443,6 @@ func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields in
 			return true
 		}
 
-		conn.Inode, err = strtoull(fields[9])
-		if err != nil {
-			return true
-		}
-
 		connList = append(connList, conn)
 		return true
 	})
@@ -552,7 +451,7 @@ func readConnList(listFile string, proto NetConnProto, ipSizeBytes, numFields in
 
 /* Decode an IP:port pair, with either a 16 or 4-byte address and 2-byte port,
    both hex-encoded. TODO: Test on a big-endian architecture. */
-func ReadConnIp(field string, lenBytes int) (net.IP, uint64, error) {
+func readConnIp(field string, lenBytes int) (net.IP, uint64, error) {
 	parts := strings.Split(field, ":")
 	if len(parts) != 2 {
 		return nil, 0, fmt.Errorf("Unable to split into IP and port")
@@ -572,7 +471,7 @@ func ReadConnIp(field string, lenBytes int) (net.IP, uint64, error) {
 	// The 32-bit words are in order, but the words themselves are little-endian
 	for i := 0; i < lenBytes; i += 4 {
 		for j := 0; j < 4; j++ {
-			byteVal, err := strconv.ParseUint(parts[0][(j+i)*2:(j+i+1)*2], 16, 8)
+			byteVal, err := strconv.ParseInt(parts[0][(j+i)*2:(j+i+1)*2], 16, 8)
 			if err != nil {
 				return nil, 0, fmt.Errorf("Unable to parse IP, %v - %v", parts[0], err)
 			}
@@ -660,38 +559,14 @@ func (self *DiskList) Get() error {
 	return err
 }
 
-func (self *ProcessList) Get() error {
-	pids := ProcList{}
-	err := pids.Get()
-	if err != nil {
-		return err
-	}
-
-	processes := make([]Process, 0, len(pids.List))
-	for _, pid := range pids.List {
-		var process Process
-
-		// Gather each composed struct, ignoring any errors.
-		_ = process.ProcState.Get(pid)
-		_ = process.ProcIo.Get(pid)
-		_ = process.ProcMem.Get(pid)
-		_ = process.ProcTime.Get(pid)
-		_ = process.ProcArgs.Get(pid)
-		_ = process.ProcExe.Get(pid)
-
-		processes = append(processes, process)
-	}
-
-	self.List = processes
-	return nil
-}
-
 func (self *ProcList) Get() error {
 	dir, err := os.Open(Procd)
 	if err != nil {
 		return err
 	}
 	defer dir.Close()
+
+	const readAllDirnames = -1 // see os.File.Readdirnames doc
 
 	names, err := dir.Readdirnames(readAllDirnames)
 	if err != nil {
@@ -750,8 +625,6 @@ func (self *ProcState) Get(pid int) error {
 
 	self.State = RunState(fields[2][0])
 
-	self.Pid = pid
-
 	self.Ppid, _ = strconv.Atoi(fields[3])
 
 	self.Tty, _ = strconv.Atoi(fields[6])
@@ -802,7 +675,6 @@ func (self *ProcTime) Get(pid int) error {
 		return err
 	}
 
-	self.CollectionTime = time.Now()
 	fields := strings.Fields(string(contents))
 
 	user, _ := strtoull(fields[13])
@@ -817,35 +689,6 @@ func (self *ProcTime) Get(pid int) error {
 	self.StartTime /= system.ticks
 	self.StartTime += system.btime
 	self.StartTime *= 1000
-
-	return err
-}
-
-// Calculate percent of CPU usage by diffing counters. The "other" ProcTime should be from an earlier reading.
-func (self *ProcTime) CalculateCpuPercent(other *ProcTime) error {
-	// The diffs need to be protected against underflow
-	if other.User > self.User {
-		return errors.New("Failed to calculate PercentUserTime: operation would result in underflow")
-	}
-	if other.Sys > self.Sys {
-		return errors.New("Failed to calculate PercentSysTime: operation would result in underflow")
-	}
-	if other.CollectionTime.After(self.CollectionTime) {
-		return errors.New("'Other' ProcTime should be older than current")
-	}
-
-	diffUser := uint64(self.User - other.User)
-	diffSys := uint64(self.Sys - other.Sys)
-	diffMillis := uint64(self.CollectionTime.Sub(other.CollectionTime) / time.Millisecond)
-
-	if diffMillis == 0 {
-		return errors.New("Failed to determine elapsed millisecods: operation would result in divide by zero")
-	}
-
-	// Calculate percentages, multiplying by 100 first to avoid precision loss
-	self.PercentUserTime = (diffUser * 100) / diffMillis
-	self.PercentSysTime = (diffSys * 100) / diffMillis
-	self.PercentTotalTime = ((diffUser + diffSys) * 100) / diffMillis
 
 	return nil
 }
@@ -1047,8 +890,4 @@ func (self *SystemDistribution) Get() error {
 		}
 		return true
 	})
-}
-
-func notImplemented() error {
-	return ErrNotImplemented
 }

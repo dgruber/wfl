@@ -16,14 +16,7 @@ to quickly define and execute a job workflow and change between different execut
 backends without changing the workflow itself.
 
 _wfl_ does not come with many features but is simple to use and enough to define and
-run jobs with dependencies.
-
-Dependencies of _wfl_ are vendored in. The only external package required to be installed
-manually is the _drmaa2interface_.
-
-```go
-    go get github.com/dgruber/drmaa2interface
-```
+run jobs and job workflows with inter-job dependencies.
 
 In its simplest form a process can be started and waited for:
 
@@ -31,8 +24,17 @@ In its simplest form a process can be started and waited for:
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("convert", "image.jpg", "image.png").Wait()
 ```
 
-A Docker container without a run command which exposes ports can be defined in a _JobTemplate_
-and started with (expecting that the Docker image is pulled already):
+Running a job as a Docker container requires a different context (and the image
+already pulled before).
+
+```go
+    ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})
+    wfl.NewWorkflow(ctx).Run("sleep", "60").Wait()
+```
+
+Starting a Docker container without a _run command_ which exposes ports requires more
+configuration which can be provided by using a _JobTemplate_ together with the _RunT()_
+method.
 
 ```go
     jt := drmaa2interface.JobTemplate{
@@ -41,6 +43,12 @@ and started with (expecting that the Docker image is pulled already):
     jt.ExtensionList = map[string]string{"exposedPorts": "80:8080/tcp"}
     
     wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContext())).RunT(jt).Wait()
+```
+
+Starting a Kubernetes batch job and waiting for its end is not much different.
+
+```go
+    wfl.NewWorkflow(wfl.NewKubernetesContext()).Run("sleep", "60").Wait()
 ```
 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
@@ -52,6 +60,15 @@ process itself.
 _wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
 
 Jobs can also be processed in [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
+
+### Getting Started
+
+Dependencies of _wfl_ (like drmaa2) are vendored in. The only external package required to be installed
+manually is the _drmaa2interface_.
+
+```go
+    go get github.com/dgruber/drmaa2interface
+```
 
 ## Context
 
@@ -78,13 +95,13 @@ then the _ContextByCfg()_ can be called.
     wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})
 ```
 
-When you want to run the workflow as Cloud Foundry Tasks the _CloudFoundryContext_ can be used:
+When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContext_ can be used:
 
 ```go
     wfl.NewCloudFoundryContext()
 ```
 
-Without a config it uses following environment variables to find the Cloud Foundry cloud controller API:
+Without a config it uses following environment variables to access the Cloud Foundry cloud controller API:
 
 * CF_API (like https://api.run.pivotal.io)
 * CF_USER
@@ -92,6 +109,21 @@ Without a config it uses following environment variables to find the Cloud Found
 
 Contexts for other workload managers like Kubernetes, DRMAA compatible HPC schedulers,
 etc. will be supported when the DRMAA2 job tracker implementation is available.
+
+For submitting Kubernetes batch jobs a Kubernetes context exists.
+
+```go
+   ctx := wfl.NewKubernetesContext()
+```
+
+Note that each job requires a container image specified which can be done by using
+the JobTemplate's JobCategory. When the same container image is used within the whole
+job workflow it makes sense to use the Kubernetes config.
+
+```go
+   ctx := wfl.NewKubernetesContextByCfg(wfl.KubernetesConfig{DefaultImage: "busybox:latest"})
+```
+
 
 ## Workflow
 
@@ -120,7 +152,7 @@ or with
 
 ## Job
 
-Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining  calls in an easy way. A job can also be seen as a container and control unit for tasks.
+Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining calls in an easy way. A job can also be seen as a container and control unit for tasks.
 
 Methods can be classified in blocking, non-blocking, job template based, function based, and error handlers.
 
@@ -195,7 +227,7 @@ and reports errors.
 [cloudfoundry](https://github.com/dgruber/wfl/blob/master/examples/cloudfoundry/cloudfoundry.go) demonstrates how a Cloud Foundry taks can be created.
 
 
-## Creating a Workflow which is Executed in OS Processes
+## Creating a Workflow which is Executed as OS Processes
 
 The allocated context defines which workload management system / job execution backend is used.
 

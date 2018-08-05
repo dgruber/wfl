@@ -14,6 +14,5 @@ func validateJobTemplate(jt drmaa2interface.JobTemplate) (bool, error) {
 			return false, errors.New("InputPath in job template must not be the same than ErrorPath")
 		}
 	}
-
 	return true, nil
 }

@@ -9,12 +9,18 @@ import (
 	"time"
 )
 
-func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent) {
+func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
 	// supervise process
 
 	dispatchTime := time.Now()
 
 	state, err := cmd.Process.Wait()
+
+	for waitForFiles > 0 {
+		<-waitCh
+		waitForFiles--
+	}
+
 	if err != nil {
 		ji := makeLocalJobInfo()
 		ji.State = drmaa2interface.Undetermined

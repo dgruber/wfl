@@ -7,6 +7,7 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
@@ -19,6 +20,7 @@ const (
 	DefaultSession      SessionType = iota // processes
 	DockerSession                          // containers
 	CloudFoundrySession                    // application tasks
+	KubernetesSession                      // pods
 )
 
 type cfContact struct {
@@ -39,9 +41,11 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 	case DefaultSession:
 		return simpletracker.New(name), nil
 	case DockerSession:
-		return dockertracker.New()
+		return dockertracker.New(name)
 	case CloudFoundrySession:
 		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
+	case KubernetesSession:
+		return kubernetestracker.New(name, nil)
 	}
 	return nil, errors.New("unknown job session type")
 }
@@ -77,8 +81,11 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 	return sm, nil
 }
 
+func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, KubernetesSession)
+}
+
 func (sm *SessionManager) logErr(message string) error {
-	//sm.log.Error(message)
 	return errors.New(message)
 }
 

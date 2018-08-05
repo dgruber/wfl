@@ -37,19 +37,25 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 		return 0, err
 	}
 
+	waitForFiles := 0
+	waitCh := make(chan bool, 3)
+
 	if t.InputPath != "" {
 		if stdin, err := cmd.StdinPipe(); err == nil {
-			redirectIn(stdin, t.InputPath)
+			waitForFiles++
+			redirectIn(stdin, t.InputPath, waitCh)
 		}
 	}
 	if t.OutputPath != "" {
 		if stdout, err := cmd.StdoutPipe(); err == nil {
-			redirectOut(stdout, t.OutputPath)
+			waitForFiles++
+			redirectOut(stdout, t.OutputPath, waitCh)
 		}
 	}
 	if t.ErrorPath != "" {
 		if stderr, err := cmd.StderrPipe(); err == nil {
-			redirectOut(stderr, t.ErrorPath)
+			waitForFiles++
+			redirectOut(stderr, t.ErrorPath, waitCh)
 		}
 	}
 
@@ -68,7 +74,7 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 	}
 
 	// supervise process
-	go TrackProcess(cmd, jobid, finishedJobChannel)
+	go TrackProcess(cmd, jobid, finishedJobChannel, waitForFiles, waitCh)
 
 	restoreEnv(env)
 	mtx.Unlock()
@@ -79,16 +85,17 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 	return 0, errors.New("process is nil")
 }
 
-func redirectOut(src io.ReadCloser, outfilename string) {
+func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) {
 	go func() {
 		buf := make([]byte, 1024)
 		outfile, _ := os.Create(outfilename)
 		io.CopyBuffer(outfile, src, buf)
 		outfile.Close()
+		waitCh <- true
 	}()
 }
 
-func redirectIn(out io.WriteCloser, infilename string) {
+func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) {
 	go func() {
 		buf := make([]byte, 1024)
 		file, err := os.Open(infilename)
@@ -97,6 +104,7 @@ func redirectIn(out io.WriteCloser, infilename string) {
 		}
 		io.CopyBuffer(out, file, buf)
 		file.Close()
+		waitCh <- true
 	}()
 }
 

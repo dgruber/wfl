@@ -36,7 +36,17 @@ func (js *JobSession) GetSessionName() (string, error) {
 }
 
 func (js *JobSession) GetJobCategories() ([]string, error) {
-	return []string{}, nil
+	var lastError error
+	jobCategories := make([]string, 0, 16)
+	for _, tracker := range js.tracker {
+		cat, err := tracker.ListJobCategories()
+		if err != nil {
+			lastError = err
+			continue
+		}
+		jobCategories = append(jobCategories, cat...)
+	}
+	return jobCategories, lastError
 }
 
 func createJobFromInfo(ji drmaa2interface.JobInfo) Job {

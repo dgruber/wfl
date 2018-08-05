@@ -23,13 +23,15 @@ For details about the mapping of job operations please consult the platform spec
   * [OS Processes](pkg/jobtracker/simpletracker/README.md)
   * [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
   * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
+  * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
+
+[Feedback](mailto:info@gridengine.eu) welcome!
 
 For a DRMAA2 implementation based on C DRMAA2 (_libdrmaa2.so_) like for *Univa Grid Engine* please
 see [drmaa2](https://github.com/dgruber/drmaa2).
 
 Not yet implemented:
 
-  * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
   * [Mesos](pkg/jobtracker/mesostracker/README.md)
   * [C DRMAA Version 1 (libdrmaa.so)](pkg/jobtracker/libdrmaa/README.md)
 

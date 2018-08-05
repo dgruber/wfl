@@ -191,34 +191,6 @@ func (self *DiskList) Get() error {
 	return notImplemented()
 }
 
-func (self *NetTcpConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *NetUdpConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *NetRawConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *NetTcpV6ConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *NetUdpV6ConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *NetRawV6ConnList) Get() error {
-	return notImplemented()
-}
-
-func (self *ProcessList) Get() error {
-	return notImplemented()
-}
-
 func (self *ProcList) Get() error {
 	n := C.proc_listpids(C.PROC_ALL_PIDS, 0, nil, 0)
 	if n <= 0 {
@@ -255,10 +227,6 @@ func (self *ProcState) Get(pid int) error {
 	return notImplemented()
 }
 
-func (self *ProcIo) Get(pid int) error {
-	return notImplemented()
-}
-
 func (self *ProcMem) Get(pid int) error {
 	info := C.struct_proc_taskallinfo{}
 
@@ -292,10 +260,6 @@ func (self *ProcTime) Get(pid int) error {
 		(uint64(info.pbsd.pbi_start_tvusec) / 1000)
 
 	return nil
-}
-
-func (self *ProcTime) CalculateCpuPercent(other *ProcTime) error {
-	return notImplemented()
 }
 
 func (self *ProcArgs) Get(pid int) error {

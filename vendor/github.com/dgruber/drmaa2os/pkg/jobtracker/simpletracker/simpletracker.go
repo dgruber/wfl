@@ -151,12 +151,15 @@ func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 }
 
 func (jt *JobTracker) ProcessToJobInfo(jobid string, pid int) (drmaa2interface.JobInfo, error) {
+	jt.ps.Lock()
+	state := jt.ps.jobState[jobid]
+	jt.ps.Unlock()
 	host, _ := os.Hostname()
 	return drmaa2interface.JobInfo{
 		Slots:             1,
 		ID:                jobid,
 		SubmissionMachine: host,
-		State:             drmaa2interface.Running,
+		State:             state,
 		JobOwner:          fmt.Sprintf("%d", os.Getuid()),
 	}, nil
 }
@@ -174,7 +177,11 @@ func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	}
 
 	if pid, err := jt.js.GetPID(jobid); err != nil {
-		return drmaa2interface.JobInfo{}, err
+		return drmaa2interface.JobInfo{
+			Slots: 1,
+			ID:    jobid,
+			State: drmaa2interface.Undetermined,
+		}, err
 	} else {
 		return jt.ProcessToJobInfo(jobid, pid)
 	}

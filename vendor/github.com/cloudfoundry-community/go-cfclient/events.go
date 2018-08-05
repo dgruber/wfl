@@ -26,7 +26,6 @@ type EventResource struct {
 type Event struct {
 	GUID             string `json:"guid"`
 	Type             string `json:"type"`
-	CreatedAt        string `json:"created_at"`
 	Actor            string `json:"actor"`
 	ActorType        string `json:"actor_type"`
 	ActorName        string `json:"actor_name"`
@@ -56,7 +55,6 @@ func (c *Client) ListEventsByQuery(query url.Values) ([]Event, error) {
 		}
 		for _, e := range eventResp.Resources {
 			e.Entity.GUID = e.Meta.Guid
-			e.Entity.CreatedAt = e.Meta.CreatedAt
 			e.Entity.c = c
 			events = append(events, e.Entity)
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 	"strings"
+	"time"
 )
 
 func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
@@ -54,9 +55,10 @@ func newPortBindings(ports string) nat.PortMap {
 }
 
 // https://github.com/moby/moby/blob/master/api/types/container/config.go
-func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Config, error) {
+func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTemplate) (*container.Config, error) {
 	var cc container.Config
 
+	cc.Labels = map[string]string{"drmaa2_jobsession": jobsession}
 	cc.WorkingDir = jt.WorkingDirectory
 	cc.Image = jt.JobCategory
 
@@ -71,7 +73,6 @@ func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Co
 	}
 
 	cc.Env = setEnv(jt.JobEnvironment)
-
 	// Docker specific settings in the extensions
 	if jt.ExtensionList != nil {
 		cc.User = jt.ExtensionList["user"]
@@ -96,7 +97,6 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 	for outer, inner := range jt.StageInFiles {
 		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", outer, inner))
 	}
-
 	hc.PortBindings = newPortBindings(jt.ExtensionList["exposedPorts"])
 	return &hc, nil
 }
@@ -107,10 +107,12 @@ func jobTemplateToNetworkingConfig(jt drmaa2interface.JobTemplate) (*network.Net
 	return &nw, nil
 }
 
-func containersToJobList(containers []types.Container) []string {
-	out := make([]string, len(containers))
+func containersToJobList(jobsession string, containers []types.Container) []string {
+	out := make([]string, 0, len(containers))
 	for _, c := range containers {
-		out = append(out, c.ID)
+		if js, exists := c.Labels["drmaa2_jobsession"]; exists && js == jobsession {
+			out = append(out, c.ID)
+		}
 	}
 	return out
 }
@@ -124,11 +126,9 @@ func containerToDRMAA2State(state *types.ContainerState) drmaa2interface.JobStat
 			return drmaa2interface.Done
 		}
 	}
-
 	if state.OOMKilled {
 		return drmaa2interface.Failed
 	}
-
 	if state.Dead {
 		if state.ExitCode != 0 {
 			return drmaa2interface.Failed
@@ -136,24 +136,41 @@ func containerToDRMAA2State(state *types.ContainerState) drmaa2interface.JobStat
 			return drmaa2interface.Done
 		}
 	}
-
 	if state.Paused {
 		return drmaa2interface.Suspended
 	}
-
 	if state.Restarting {
 		return drmaa2interface.Queued
 	}
-
 	if state.Running {
 		return drmaa2interface.Running
 	}
-
 	return drmaa2interface.Undetermined
 }
 
 func containerToDRMAA2JobInfo(c types.ContainerJSON) (ji drmaa2interface.JobInfo, err error) {
-	return ji, err
+	ji.ID = c.ID
+	ji.Slots = 1
+	if c.Config != nil {
+		ji.AllocatedMachines = []string{c.Config.Hostname}
+	}
+	if c.State != nil {
+		ji.ExitStatus = c.State.ExitCode
+		finished, err := time.Parse(time.RFC3339Nano, c.State.FinishedAt)
+		if err == nil {
+			ji.FinishTime = finished
+		}
+		started, err := time.Parse(time.RFC3339Nano, c.State.StartedAt)
+		if err == nil {
+			ji.DispatchTime = started
+		}
+		ji.State = containerToDRMAA2State(c.State)
+	}
+	submitted, err := time.Parse(time.RFC3339Nano, c.Created)
+	if err == nil {
+		ji.SubmissionTime = submitted
+	}
+	return ji, nil
 }
 
 func arrayJobID2GUIDs(id string) ([]string, error) {

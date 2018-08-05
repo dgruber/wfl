@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sleeper
+spec:
+  template:
+    metadata:
+      name: sleeper
+    spec:
+      containers:
+      - name: sleeper
+        image: cloudfoundry/cflinuxfs2
+        command:
+         - "/bin/bash"
+         - "-c"
+         - "sleep 120"
+      restartPolicy: Never

@@ -2,7 +2,6 @@ package sigar
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"time"
 )
@@ -18,11 +17,6 @@ type Sigar interface {
 }
 
 var ErrNotImplemented error = errors.New("Collection not implemented for this operating system")
-
-// Simple Get() that returns an error
-type Getter interface {
-	Get() error
-}
 
 type Cpu struct {
 	User    uint64
@@ -191,26 +185,6 @@ type NetIfaceList struct {
 	List []NetIface
 }
 
-type NetConnProto int
-
-const (
-	ConnProtoUdp = NetConnProto(iota + 1)
-	ConnProtoTcp
-	ConnProtoRaw
-)
-
-func (self NetConnProto) String() string {
-	switch self {
-	case ConnProtoUdp:
-		return "udp"
-	case ConnProtoTcp:
-		return "tcp"
-	case ConnProtoRaw:
-		return "raw"
-	}
-	return ""
-}
-
 type NetConnState int
 
 const (
@@ -227,68 +201,14 @@ const (
 	ConnStateClosing
 )
 
-func (self NetConnState) String() string {
-	switch self {
-	case ConnStateEstablished:
-		return "established"
-	case ConnStateSynSent:
-		return "syn_sent"
-	case ConnStateSynRecv:
-		return "syn_recv"
-	case ConnStateFinWait1:
-		return "fin_wait1"
-	case ConnStateFinWait2:
-		return "fin_wait2"
-	case ConnStateTimeWait:
-		return "time_wait"
-	case ConnStateClose:
-		return "close"
-	case ConnStateCloseWait:
-		return "close_wait"
-	case ConnStateLastAck:
-		return "last_ack"
-	case ConnStateListen:
-		return "listen"
-	case ConnStateClosing:
-		return "closing"
-	}
-	return ""
-}
-
 type NetConn struct {
-	LocalAddr   net.IP
-	RemoteAddr  net.IP
-	LocalPort   uint64
-	RemotePort  uint64
-	SendQueue   uint64
-	RecvQueue   uint64
-	Status      NetConnState
-	Proto       NetConnProto
-	Inode       uint64
-	Pid         int
-	ProcessName string
-}
-
-func (self NetConn) String() string {
-	str := ""
-	switch self.Status {
-	case ConnStateListen:
-		str = fmt.Sprintf("Listen %s %s:%d", self.Proto, self.LocalAddr, self.LocalPort)
-	default:
-		if self.RemoteAddr != nil {
-			str = fmt.Sprintf("%s %s:%d <-> %s:%d", self.Proto, self.LocalAddr, self.LocalPort, self.RemoteAddr, self.RemotePort)
-		} else {
-			// Some sockets (e.g. UDP) are technically not in the LISTEN state, but don't provide the remote address
-			str = fmt.Sprintf("%s %s:%d", self.Proto, self.LocalAddr, self.LocalPort)
-		}
-	}
-
-	if self.Pid != 0 && self.ProcessName != "" {
-		str += fmt.Sprintf(" by pid %d/%s", self.Pid, self.ProcessName)
-	} else if self.Pid != 0 {
-		str += fmt.Sprintf(" by pid %d", self.Pid)
-	}
-	return str
+	LocalAddr  net.IP
+	RemoteAddr net.IP
+	LocalPort  uint64
+	RemotePort uint64
+	SendQueue  uint64
+	RecvQueue  uint64
+	Status     NetConnState
 }
 
 type NetTcpConnList struct {
@@ -315,19 +235,6 @@ type NetRawV6ConnList struct {
 	List []NetConn
 }
 
-type ProcessList struct {
-	List []Process
-}
-
-type Process struct {
-	ProcState
-	ProcIo
-	ProcMem
-	ProcTime
-	ProcArgs
-	ProcExe
-}
-
 type ProcList struct {
 	List []int
 }
@@ -346,7 +253,6 @@ const (
 type ProcState struct {
 	Name      string
 	State     RunState
-	Pid       int
 	Ppid      int
 	Tty       int
 	Priority  int
@@ -362,26 +268,19 @@ type ProcIo struct {
 }
 
 type ProcMem struct {
-	Size          uint64
-	Resident      uint64
-	Share         uint64
-	MinorFaults   uint64
-	MajorFaults   uint64
-	PageFaults    uint64
-	PageFileBytes uint64 // Currently only collected on Windows
+	Size        uint64
+	Resident    uint64
+	Share       uint64
+	MinorFaults uint64
+	MajorFaults uint64
+	PageFaults  uint64
 }
 
 type ProcTime struct {
-	CollectionTime time.Time
-	StartTime      uint64 // Milliseconds since epoch
-	User           uint64 // User time in milliseconds
-	Sys            uint64 // System time in milliseconds
-	Total          uint64 // Total time in milliseconds
-
-	// Not valid until after CalculateCpuPercent()
-	PercentUserTime  uint64
-	PercentSysTime   uint64
-	PercentTotalTime uint64
+	StartTime uint64
+	User      uint64
+	Sys       uint64
+	Total     uint64
 }
 
 type ProcArgs struct {
