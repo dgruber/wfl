@@ -213,6 +213,7 @@ as parameters for them. In most cases only _RemoteCommand_, _Args_, _WorkingDire
 - [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
 - [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
 - [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
+- [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
