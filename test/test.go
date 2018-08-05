@@ -33,7 +33,7 @@ func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job
 
 	jtemplate := drmaa2interface.JobTemplate{
 		RemoteCommand: "go",
-		Args:          []string{"build", "-a"},
+		Args:          []string{"build"},
 		OutputPath:    "/dev/stdout",
 		ErrorPath:     "/dev/stderr",
 	}
@@ -60,7 +60,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 
 	jtemplate := drmaa2interface.JobTemplate{
 		RemoteCommand: "go",
-		Args:          []string{"build", "-a"},
+		Args:          []string{"build"},
 		JobCategory:   image,
 		StageInFiles: map[string]string{
 			goPath + "/src/github.com/dgruber/drmaa2interface": "/go/src/github.com/dgruber/drmaa2interface",
