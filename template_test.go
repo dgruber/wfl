@@ -112,7 +112,6 @@ var _ = Describe("Template", func() {
 
 			template.AddIterator("test", itr)
 			template.AddIterator("test2", itr)
-
 			template.AddMap("existing", itr)
 
 			Ω(template.NextMap("existing").Args[0]).Should(Equal("3"))     // 2 + 1

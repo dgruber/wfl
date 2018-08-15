@@ -10,6 +10,7 @@ import (
 	"github.com/dgruber/wfl"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -114,6 +115,7 @@ var _ = Describe("Jstream", func() {
 		})
 
 		It("should be possible to run all functions in ApplyAsync() concurrently", func() {
+			cfg.BufferSize = 1
 			stream := NewStream(cfg, NewSequenceBreaker(25))
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).Should(BeNil())
@@ -143,7 +145,6 @@ var _ = Describe("Jstream", func() {
 			}
 			NewStream(cfg, NewSequenceBreaker(100)).Synchronize().Apply(isFinished).Consume()
 			Ω(notDone).Should(BeNumerically("==", 0))
-
 		})
 
 		It("should be possible to Filter() a job", func() {
@@ -157,6 +158,52 @@ var _ = Describe("Jstream", func() {
 			Ω(len(jobs)).Should(BeNumerically("==", 50))
 			Ω(jobs[0].Template().JobEnvironment["TASK_ID"]).Should(Equal("51"))
 			Ω(jobs[49].Template().JobEnvironment["TASK_ID"]).Should(Equal("100"))
+		})
+
+		It("should be possible to Tee() a stream", func() {
+			cfg.BufferSize = 10
+			jobs1, jobs2 := NewStream(cfg, NewSequenceBreaker(1000)).Tee()
+			var amount1 int64
+			var amount2 int64
+			j1 := jobs1.Apply(func(j *wfl.Job) *wfl.Job {
+				atomic.AddInt64(&amount1, 1)
+				return j
+			})
+			j2 := jobs2.Apply(func(j *wfl.Job) *wfl.Job {
+				atomic.AddInt64(&amount2, 1)
+				return j
+			})
+			f1, f2 := j1.MultiSync(j2)
+			f1.Join(f2)
+			Ω(amount1).Should(BeNumerically("==", amount2))
+		})
+
+		It("should be possible to Merge() multiple streams", func() {
+			s1 := NewStream(cfg, NewSequenceBreaker(50))
+			s2 := NewStream(cfg, NewSequenceBreaker(120))
+			var amount int64
+			s1.Merge(s2).Apply(func(j *wfl.Job) *wfl.Job {
+				atomic.AddInt64(&amount, 1)
+				return j
+			}).Synchronize().Consume()
+			Ω(amount).Should(BeNumerically("==", 170))
+		})
+
+		It("should be possible to CollectN() jobs from a stream", func() {
+			s1 := NewStream(cfg, NewSequenceBreaker(500))
+			allJobs := make([]*wfl.Job, 0, 500)
+			for i := 0; i < 45; i++ {
+				jobs := s1.CollectN(11)
+				Ω(len(jobs)).Should(BeNumerically("==", 11))
+				allJobs = append(allJobs, jobs...)
+			}
+			jobs := s1.CollectN(11)
+			Ω(len(jobs)).Should(BeNumerically("==", 5))
+
+			allJobs = append(allJobs, jobs...)
+			for i := range allJobs {
+				allJobs[i].Synchronize()
+			}
 		})
 
 	})
@@ -181,6 +228,33 @@ var _ = Describe("Jstream", func() {
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).ShouldNot(BeNil())
 			Ω(stream.HasError()).Should(BeTrue())
+		})
+
+	})
+
+	Context("Regression tests", func() {
+
+		var cfg Config
+
+		BeforeEach(func() {
+			cfg.Template = wfl.NewTemplate(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", `echo $TASK_ID`},
+			}).AddIterator("tasks", wfl.NewEnvSequenceIterator("TASK_ID", 1, 1))
+			cfg.Workflow = wfl.NewWorkflow(wfl.NewProcessContext())
+			cfg.BufferSize = 1
+		})
+
+		It("should call Next() when no breaker is registered", func() {
+			stream := NewStream(cfg, nil)
+			jobs := stream.CollectN(10)
+			Ω(len(jobs)).Should(BeNumerically("==", 10))
+			t := jobs[0].Template()
+			Ω(t).ShouldNot(BeNil())
+			Ω(t.RemoteCommand).Should(Equal("/bin/sh"))
+			Ω(t.JobEnvironment["TASK_ID"]).Should(Equal("1"))
+			t = jobs[9].Template()
+			Ω(t.JobEnvironment["TASK_ID"]).Should(Equal("10"))
 		})
 
 	})

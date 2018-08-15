@@ -5,18 +5,21 @@ import (
 	"github.com/dgruber/wfl"
 )
 
-// note that is written and executed on macOS
+// ---------------------------------------------------
+// note that this is written for and executed on macOS
+// ---------------------------------------------------
 
 // Demonstration of how Template can be used for generating a sequence
-// of environment variables (TASK_ID) in the job context so that each
-// job can process a different data chunk by translating the content of
-// the TASK_ID environment variable to the data to process.
+// of job templates with different environment variables (TASK_ID) in
+// the job context so that each job can process a different data chunk
+// by translating the content of the TASK_ID environment variable to the
+// data to process.
 
-// implements a canonical example of a workflow where the first task
-// does some pre-processing (here generating a sequence of characters),
-// then each data chunk is processed in parallel (here each character
-// is converted from lowercase to uppercase), and finally when all
-// jobs finished the output files are combined.
+// It implements a canonical example of a workflow where the first task
+// does some pre-processing (here generating a sequence of characters).
+// Then each data chunk is processed in parallel (here each character
+// is converted from lowercase to uppercase) and the output is stored in
+// a file. Finally when all jobs are finished the output files are combined.
 
 func main() {
 
