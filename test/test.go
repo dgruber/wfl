@@ -20,15 +20,16 @@ var exitCode int
 func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job) {
 
 	testApps := map[string]string{
-		"simple":       "../examples/simple/simple.go",
-		"touchy":       "../examples/touchy/touchy.go",
-		"cloudfoundry": "../examples/cloudfoundry/cloudfoundry.go",
-		"docker":       "../examples/docker/docker.go",
-		"template":     "../examples/template/template.go",
-		"parallel":     "../examples/parallel/parallel.go",
-		"notifier":     "../examples/notifier/notifier.go",
-		"shell":        "../examples/shell/shell.go",
-		"stream":       "../examples/stream/stream.go",
+		"simple":         "../examples/simple/simple.go",
+		"touchy":         "../examples/touchy/touchy.go",
+		"cloudfoundry":   "../examples/cloudfoundry/cloudfoundry.go",
+		"docker":         "../examples/docker/docker.go",
+		"template":       "../examples/template/template.go",
+		"parallel":       "../examples/parallel/parallel.go",
+		"notifier":       "../examples/notifier/notifier.go",
+		"shell":          "../examples/shell/shell.go",
+		"stream":         "../examples/stream/stream.go",
+		"builderPattern": "../examples/builderPattern/builderPattern.go",
 	}
 
 	jtemplate := drmaa2interface.JobTemplate{
@@ -46,14 +47,15 @@ func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job
 func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemplate, *wfl.Job) {
 
 	testApps := map[string]string{
-		"simple":       "/go/src/github.com/dgruber/wfl/examples/simple/simple.go",
-		"touchy":       "/go/src/github.com/dgruber/wfl/examples/touchy/touchy.go",
-		"cloudfoundry": "/go/src/github.com/dgruber/wfl/examples/cloudfoundry/cloudfoundry.go",
-		"docker":       "/go/src/github.com/dgruber/wfl/examples/docker/docker.go",
-		"template":     "/go/src/github.com/dgruber/wfl/examples/template/template.go",
-		"parallel":     "/go/src/github.com/dgruber/wfl/examples/parallel/parallel.go",
-		"shell":        "/go/src/github.com/dgruber/wfl/examples/shell/shell.go",
-		"stream":       "/go/src/github.com/dgruber/wfl/examples/stream/stream.go",
+		"simple":         "/go/src/github.com/dgruber/wfl/examples/simple/simple.go",
+		"touchy":         "/go/src/github.com/dgruber/wfl/examples/touchy/touchy.go",
+		"cloudfoundry":   "/go/src/github.com/dgruber/wfl/examples/cloudfoundry/cloudfoundry.go",
+		"docker":         "/go/src/github.com/dgruber/wfl/examples/docker/docker.go",
+		"template":       "/go/src/github.com/dgruber/wfl/examples/template/template.go",
+		"parallel":       "/go/src/github.com/dgruber/wfl/examples/parallel/parallel.go",
+		"shell":          "/go/src/github.com/dgruber/wfl/examples/shell/shell.go",
+		"stream":         "/go/src/github.com/dgruber/wfl/examples/stream/stream.go",
+		"builderPattern": "/go/src/github.com/dgruber/wfl/examples/builderPattern/builderPattern.go",
 	}
 
 	goPath := os.Getenv("GOPATH")

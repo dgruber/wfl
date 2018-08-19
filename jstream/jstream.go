@@ -142,28 +142,43 @@ func (g *Stream) Join(s *Stream) {
 	}
 }
 
-// MultiSync starts two coroutines which synchronizes the jobs from the
-// two streams (waiting until the jobs are finished). It returns two
-// synchronized streams which contains only finished jobs in input order.
-func (g *Stream) MultiSync(s *Stream) (*Stream, *Stream) {
-	outch1 := make(chan *wfl.Job, g.config.BufferSize)
-	outch2 := make(chan *wfl.Job, s.config.BufferSize)
+// MultiSync starts _n_ coroutines which synchronizes the jobs from the
+// _n_ streams (returns only finished jobs in the output stream).
+func (g *Stream) MultiSync(s ...*Stream) []*Stream {
+	outch := make(chan *wfl.Job, g.config.BufferSize)
+	outStream := make([]*Stream, len(s))
+	outs := make([]chan *wfl.Job, len(s))
+
+	for i := range s {
+		size := s[i].config.BufferSize
+		outs[i] = make(chan *wfl.Job, size)
+		outStream[i] = &Stream{
+			jch:    outs[i],
+			config: s[i].config,
+		}
+	}
 
 	go func() {
 		for job := range g.jch {
-			outch1 <- job.Synchronize()
+			outch <- job.Synchronize()
 		}
-		close(outch1)
+		close(outch)
 	}()
 
-	go func() {
-		for job := range s.jch {
-			outch2 <- job.Synchronize()
-		}
-		close(outch2)
-	}()
+	for i := range s {
+		index := i
+		go func() {
+			for job := range s[index].jch {
+				outs[i] <- job.Synchronize()
+			}
+			close(outs[i])
+		}()
+	}
 
-	return &Stream{jch: outch1, config: g.config}, &Stream{jch: outch2, config: s.config}
+	returnedStreams := make([]*Stream, 1)
+	returnedStreams[0] = &Stream{jch: outch, config: g.config}
+
+	return append(returnedStreams, outStream...)
 }
 
 // Merge combines the current stream with the given streams into one stream.

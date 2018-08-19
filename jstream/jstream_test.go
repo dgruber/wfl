@@ -173,9 +173,18 @@ var _ = Describe("Jstream", func() {
 				atomic.AddInt64(&amount2, 1)
 				return j
 			})
-			f1, f2 := j1.MultiSync(j2)
-			f1.Join(f2)
+			syncedStreams := j1.MultiSync(j2)
+			Ω(len(syncedStreams)).Should(BeNumerically("==", 2))
+			syncedStreams[0].Join(syncedStreams[1])
 			Ω(amount1).Should(BeNumerically("==", amount2))
+		})
+
+		It("should be possible to MultiSync() a single stream", func() {
+			cfg.BufferSize = 10
+			jobs1 := NewStream(cfg, NewSequenceBreaker(1000))
+			syncedStreams := jobs1.MultiSync()
+			Ω(len(syncedStreams)).Should(BeNumerically("==", 1))
+			syncedStreams[0].Collect()
 		})
 
 		It("should be possible to Merge() multiple streams", func() {

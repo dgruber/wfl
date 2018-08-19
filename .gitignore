@@ -17,6 +17,7 @@
 
 privateManifest.yml
 
+builderPattern
 stream
 shell
 notifier
