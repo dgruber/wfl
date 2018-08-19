@@ -107,9 +107,6 @@ Without a config it uses following environment variables to access the Cloud Fou
 * CF_USER
 * CF_PASSWORD
 
-Contexts for other workload managers like Kubernetes, DRMAA compatible HPC schedulers,
-etc. will be supported when the DRMAA2 job tracker implementation is available.
-
 For submitting Kubernetes batch jobs a Kubernetes context exists.
 
 ```go
@@ -124,6 +121,8 @@ job workflow it makes sense to use the Kubernetes config.
    ctx := wfl.NewKubernetesContextByCfg(wfl.KubernetesConfig{DefaultImage: "busybox:latest"})
 ```
 
+Contexts for other container engines or workload managers like DRMAA compatible HPC schedulers,
+etc. will be supported when the DRMAA2 job tracker implementation is available.
 
 ## Workflow
 
@@ -310,4 +309,4 @@ For executing a function on a submission error _OnError()_ can be used.
 
 More methods can be found in the sources.
 
-For missing functionality or bugs please open an issue on github. Contributions welcome.
+For missing functionality or bugs please open an issue on github. Contributions welcome!
