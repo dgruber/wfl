@@ -364,6 +364,7 @@ var _ = Describe("Job", func() {
 				Run("./test_scripts/randfail.sh").
 				Run("./test_scripts/randfail.sh")
 
+			job.RetryAnyFailed(1)
 			interation := 0
 			for len(job.ListAllFailed()) > 0 {
 				fmt.Printf("retry failed jobs (%d)\n", interation)
@@ -473,6 +474,11 @@ var _ = Describe("Job", func() {
 			Ω(job.LastError().Error()).Should(Equal("job not available"))
 		})
 
+		It("should return an empty job ID string in case of an error", func() {
+			job := wfl.EmptyJob()
+			Ω(job.JobID()).Should(Equal(""))
+		})
+
 		It("should error when running a job without a command", func() {
 			wf := makeWfl()
 			job := wfl.NewJob(wf).RunT(drmaa2interface.JobTemplate{RemoteCommand: ""})
@@ -496,6 +502,16 @@ var _ = Describe("Job", func() {
 			job.JobInfo()
 			err := job.LastError()
 			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("should return ExitStatus() -1 when no job is defined", func() {
+			exit := wfl.EmptyJob().ExitStatus()
+			Ω(exit).Should(BeNumerically("==", -1))
+		})
+
+		It("should error at Then() in case when prev. job is not found", func() {
+			job := wfl.EmptyJob().Then(func(j drmaa2interface.Job) {})
+			Ω(job.LastError().Error()).Should(ContainSubstring("job not available"))
 		})
 
 	})

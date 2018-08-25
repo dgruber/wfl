@@ -187,16 +187,17 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 // Do executes a function which gets the DRMAA2 job object as parameter.
 // This allows working with the low-level DRMAA2 job object.
 func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
-	if job, err := j.jobCheck(); err != nil {
-		// do not store error as it overrides job action errors
-		return j
-	} else {
+	job, err := j.jobCheck()
+	// do not store error as it overrides job action errors
+	if err == nil {
 		f(job)
 	}
 	return j
 }
 
-// Suspend stops a job from execution.
+// Suspend stops the last task of the job from execution. How this is
+// done depends on the Context. Typically a signal (like SIGTSTP) is
+// sent to the tasks of the job.
 func (j *Job) Suspend() *Job {
 	if job, err := j.jobCheck(); err != nil {
 		j.lastError = err
@@ -245,7 +246,7 @@ func replaceTask(j *Job, e *task) {
 	e.job, e.submitError = j.wfl.js.RunJob(e.template)
 }
 
-// Resubmit starts the previously submitted job n-times. The jobs are
+// Resubmit starts the previously submitted task n-times. All tasks are
 // executed in parallel.
 func (j *Job) Resubmit(r int) *Job {
 	for i := 0; i < r || r == -1; i++ {
@@ -284,7 +285,7 @@ func (j *Job) RunEvery(d time.Duration, end time.Time, cmd string, args ...strin
 func (j *Job) RunEveryT(d time.Duration, end time.Time, jt drmaa2interface.JobTemplate) error {
 	for range time.NewTicker(d).C {
 		if time.Now().After(end) {
-			return nil
+			break
 		}
 		j.RunT(jt)
 		if j.lastError != nil {
@@ -309,7 +310,7 @@ func wait(task *task) {
 	task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
 }
 
-// Wait until the most recently job was finished.
+// Wait until the most recently task was finished.
 func (j *Job) Wait() *Job {
 	j.lastError = nil
 	if task := j.lastJob(); task != nil {
@@ -320,7 +321,7 @@ func (j *Job) Wait() *Job {
 	return j
 }
 
-// Retry waits until the last job in chain (not for the previous ones) is finished.
+// Retry waits until the last task in chain (not for the previous ones) is finished.
 // When it failed it resubmits it and waits again for a successful end.
 func (j *Job) Retry(r int) *Job {
 	for ; r > 0; r-- {
@@ -332,7 +333,7 @@ func (j *Job) Retry(r int) *Job {
 	return j
 }
 
-// Synchronize with all jobs in the chain. All jobs are terminated when
+// Synchronize waits until the tasks of the job are finished. All jobs are terminated when
 // the call returns.
 func (j *Job) Synchronize() *Job {
 	for _, task := range j.tasklist {
@@ -341,8 +342,8 @@ func (j *Job) Synchronize() *Job {
 	return j
 }
 
-// ListAllFailed returns all jobs which failed. Note that it implicitly
-// waits until all tasks finished.
+// ListAllFailed returns all tasks which failed as array of DRMAA2 jobs. Note that
+// it implicitly waits until all tasks are finished.
 func (j *Job) ListAllFailed() []drmaa2interface.Job {
 	failed := make([]drmaa2interface.Job, 0, len(j.tasklist))
 	for _, task := range j.tasklist {
@@ -378,12 +379,12 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 	return j
 }
 
-// Failed returns true in case the current job stated equals drmaa2interface.Failed
+// Failed returns true in case the current task stated equals drmaa2interface.Failed
 func (j *Job) Failed() bool {
 	return j.State() == drmaa2interface.Failed
 }
 
-// Success returns true in case the current job stated equals drmaa2interface.Done
+// Success returns true in case the current task stated equals drmaa2interface.Done
 // and the job exit status is 0.
 func (j *Job) Success() bool {
 	if j.State() == drmaa2interface.Done {
@@ -394,8 +395,8 @@ func (j *Job) Success() bool {
 	return false
 }
 
-// ExitStatus waits until the previously submitted job is finished and
-// returns the exit status of the job. In case of an internal error it
+// ExitStatus waits until the previously submitted task is finished and
+// returns the exit status of the task. In case of an internal error it
 // returns -1.
 func (j *Job) ExitStatus() int {
 	j.Wait()
@@ -405,9 +406,9 @@ func (j *Job) ExitStatus() int {
 	return -1
 }
 
-// Then waits until the previous job is terminated and executes the
+// Then waits until the previous task is terminated and executes the
 // given function by providing the DRMAA2 job interface which gives
-// access to the low-level DRMAA2 job.
+// access to the low-level DRMAA2 job methods.
 func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 	j.lastError = nil
 	if task := j.lastJob(); task != nil && task.job != nil {
@@ -421,14 +422,14 @@ func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 	return j
 }
 
-// ThenRun waits until the previous job is terminated and executes then
-// the given command as new job.
+// ThenRun waits until the previous task is terminated and executes then
+// the given command as new task.
 func (j *Job) ThenRun(cmd string, args ...string) *Job {
 	return j.Wait().Run(cmd, args...)
 }
 
-// ThenRunT waits until the previous job is terminated and executes then
-// a new job based on the given JobTemplate.
+// ThenRunT waits until the previous task is terminated and executes then
+// a new task based on the given JobTemplate.
 func (j *Job) ThenRunT(jt drmaa2interface.JobTemplate) *Job {
 	return j.Wait().RunT(jt)
 }
@@ -446,7 +447,7 @@ func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
 }
 
 // OnSuccess executes the given function after the previously submitted
-// job finished in the drmaa2interface.Done state.
+// task finished in the drmaa2interface.Done state.
 func (j *Job) OnSuccess(f func(job drmaa2interface.Job)) *Job {
 	if waitForJobEndAndState(j) == drmaa2interface.Done {
 		j.Then(f)
@@ -454,14 +455,14 @@ func (j *Job) OnSuccess(f func(job drmaa2interface.Job)) *Job {
 	return j
 }
 
-// OnSuccessRun submits a job when the previous job ended in the
-// job state drmaa2interface.Done.
+// OnSuccessRun submits a task when the previous task ended in the
+// state drmaa2interface.Done.
 func (j *Job) OnSuccessRun(cmd string, args ...string) *Job {
 	return j.OnSuccessRunT(drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args})
 }
 
-// OnSuccessRunT submits a job when the previous job ended in the
-// job state drmaa2interface.Done.
+// OnSuccessRunT submits a task when the previous task ended in the
+// state drmaa2interface.Done.
 func (j *Job) OnSuccessRunT(jt drmaa2interface.JobTemplate) *Job {
 	if waitForJobEndAndState(j) == drmaa2interface.Done {
 		j.RunT(jt)
@@ -469,11 +470,11 @@ func (j *Job) OnSuccessRunT(jt drmaa2interface.JobTemplate) *Job {
 	return j
 }
 
-// OnFailure executes the given function when the previous job in the list failed.
+// OnFailure executes the given function when the previous task in the list failed.
 // Fails mean the job was started successfully by the system but then existed with
 // an exit code != 0.
 //
-// When running the job resulted in an error (i.e. the job run function errored),
+// When running the task resulted in an error (i.e. the job run function errored),
 // then the function is not executed.
 func (j *Job) OnFailure(f func(job drmaa2interface.Job)) *Job {
 	if waitForJobEndAndState(j) != drmaa2interface.Done {
@@ -482,13 +483,13 @@ func (j *Job) OnFailure(f func(job drmaa2interface.Job)) *Job {
 	return j
 }
 
-// OnFailureRun submits a job when the previous job ended in a state
+// OnFailureRun submits a task when the previous task ended in a state
 // different than drmaa2interface.Done.
 func (j *Job) OnFailureRun(cmd string, args ...string) *Job {
 	return j.OnFailureRunT(drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args})
 }
 
-// OnFailureRunT submits a job when the previous job ended in a state
+// OnFailureRunT submits a task when the previous job ended in a state
 // different than drmaa2interface.Done.
 func (j *Job) OnFailureRunT(jt drmaa2interface.JobTemplate) *Job {
 	if waitForJobEndAndState(j) != drmaa2interface.Done {

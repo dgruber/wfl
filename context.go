@@ -72,15 +72,22 @@ func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 	return &Context{sm: sm, ctxCreationErr: err}
 }
 
+// DockerConfig determines configuration options for the Docker containers
+// which are created by the Workflow. A common use-case is setting a default
+// Docker image, which is used when Run() is called or when RunT() is used
+// but the job category is not set in the job template.
 type DockerConfig struct {
 	DBFile             string
 	DefaultDockerImage string
 }
 
+// NewDockerContext creates a new Context containing a DRMAA2 session manager
+// which is capable for creating Docker containers.
 func NewDockerContext() *Context {
 	return NewDockerContextByCfg(DockerConfig{DBFile: "", DefaultDockerImage: ""})
 }
 
+// NewDockerContextByCfg creates a new Context based on the given DockerConfig.
 func NewDockerContextByCfg(cfg DockerConfig) *Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = TmpFile()
@@ -89,6 +96,8 @@ func NewDockerContextByCfg(cfg DockerConfig) *Context {
 	return &Context{sm: sm, defaultDockerImage: cfg.DefaultDockerImage, ctxCreationErr: err}
 }
 
+// CloudFoundryConfig descibes where Cloud Foundry (CC API) is found and can be
+// accessed.
 type CloudFoundryConfig struct {
 	APIAddr  string
 	User     string
@@ -96,6 +105,9 @@ type CloudFoundryConfig struct {
 	DBFile   string
 }
 
+// NewCloudFoundryContext creates a new Context which allows creating Cloud Foundry
+// tasks when executing a Workflow. It reads the configuration out of environment
+// variables (CF_API, CF_USER, CF_PASSWORD).
 func NewCloudFoundryContext() *Context {
 	cfg := CloudFoundryConfig{}
 	cfg.APIAddr = os.Getenv("CF_API")
@@ -105,6 +117,9 @@ func NewCloudFoundryContext() *Context {
 	return NewCloudFoundryContextByCfg(cfg)
 }
 
+// NewCloudFoundryContextByCfg creates a new task execution Context based on
+// the the CloudFoundryContext which describes the API endpoint of the cloud
+// controller API of Cloud Foundry.
 func NewCloudFoundryContextByCfg(cfg CloudFoundryConfig) *Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = TmpFile()
@@ -121,11 +136,18 @@ func ErrorTestContext() *Context {
 	return &Context{sm: nil, ctxCreationErr: errors.New("error")}
 }
 
+// KubernetesConfig describes the default container image to use when no other
+// is specified in the JobCategory of the JobTemplate. This allows to use the
+// Run() method instead of RunT().
 type KubernetesConfig struct {
 	DefaultImage string
 	DBFile       string
 }
 
+// NewKubernetesContextByCfg creates a new Context with kubernetes as
+// task execution engine. The KubernetesConfig configures details, like
+// a default container image which is required when Run() is used or
+// no JobCategory is set in the JobTemplate.
 func NewKubernetesContextByCfg(cfg KubernetesConfig) *Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = TmpFile()
@@ -138,6 +160,8 @@ func NewKubernetesContextByCfg(cfg KubernetesConfig) *Context {
 	}
 }
 
+// NewKubernetesContext creates a new Context which executes tasks of
+// the workflow in Kubernetes.
 func NewKubernetesContext() *Context {
 	return NewKubernetesContextByCfg(KubernetesConfig{})
 }

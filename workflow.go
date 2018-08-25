@@ -6,17 +6,16 @@ import (
 	"github.com/dgruber/drmaa2interface"
 )
 
-// Workflow contains the backend context and a job session. A DRMAA2 job session
-// provides typically logical isolation for jobs.
+// Workflow contains the backend context and a job session. The DRMAA2 job session
+// provides typically logical isolation between jobs.
 type Workflow struct {
 	ctx                   *Context
 	js                    drmaa2interface.JobSession
 	workflowCreationError error
 }
 
-// NewWorkflow creates a new Workflow based on the given context.
-// Internally it creates a DRMAA2 JobSession which is used for
-// separating jobs.
+// NewWorkflow creates a new Workflow based on the given execution context.
+// Internally it creates a DRMAA2 JobSession which is used for separating jobs.
 func NewWorkflow(context *Context) *Workflow {
 	var err error
 	if context == nil {
@@ -57,12 +56,14 @@ func (w *Workflow) HasError() bool {
 	return w.workflowCreationError != nil
 }
 
-// Run submits the first job in the workflow. Same as NewJob(w).Run().
+// Run submits the first task in the workflow and returns the Job object.
+// Same as NewJob(w).Run().
 func (w *Workflow) Run(cmd string, args ...string) *Job {
 	return NewJob(w).Run(cmd, args...)
 }
 
-// RunT submits the first job in the workflow. Same as NewJob(w).RunT().
+// RunT submits the first task in the workflow and returns the Job object.
+// Same as NewJob(w).RunT().
 func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return NewJob(w).RunT(jt)
 }

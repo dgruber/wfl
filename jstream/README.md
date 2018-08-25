@@ -1,5 +1,7 @@
 # Job Stream
 
+Job Stream allows to create and manipulate _control streams_ of _wfl_ jobs.
+
 ## Example
 
 ```go

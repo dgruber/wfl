@@ -122,7 +122,7 @@ var _ = Describe("Jstream", func() {
 			Ω(stream.HasError()).Should(BeFalse())
 
 			var max int
-			stream.ApplyAsyncN(createCoroutineCounter(&max), 25).Consume()
+			stream.ApplyAsyncN(createCoroutineCounter(&max), 25).Synchronize().Consume()
 			Ω(max).Should(BeNumerically("==", 25))
 
 			NewStream(cfg, NewSequenceBreaker(25)).ApplyAsyncN(createCoroutineCounter(&max), 10).Consume()
@@ -145,6 +145,18 @@ var _ = Describe("Jstream", func() {
 			}
 			NewStream(cfg, NewSequenceBreaker(100)).Synchronize().Apply(isFinished).Consume()
 			Ω(notDone).Should(BeNumerically("==", 0))
+		})
+
+		It("should be possible to catch an Error()", func() {
+			cfg.Template = wfl.NewTemplate(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", `exit 1`},
+			}).AddIterator("tasks", wfl.NewEnvSequenceIterator("TASK_ID", 1, 1))
+			cfg.Workflow = nil
+			hasError := false
+			NewStream(cfg, NewSequenceBreaker(10)).
+				OnError(func(e error) { hasError = true })
+			Ω(hasError).Should(BeTrue())
 		})
 
 		It("should be possible to Filter() a job", func() {
@@ -187,6 +199,15 @@ var _ = Describe("Jstream", func() {
 			syncedStreams[0].Collect()
 		})
 
+		It("should be possible to Join() two streams", func() {
+			s1, s2 := NewStream(cfg, NewSequenceBreaker(1000)).Tee()
+			s1.Join(s2)
+			j1 := s1.Collect()
+			j2 := s2.Collect()
+			Ω(len(j1)).Should(BeNumerically("==", 0))
+			Ω(len(j2)).Should(BeNumerically("==", 0))
+		})
+
 		It("should be possible to Merge() multiple streams", func() {
 			s1 := NewStream(cfg, NewSequenceBreaker(50))
 			s2 := NewStream(cfg, NewSequenceBreaker(120))
@@ -215,6 +236,15 @@ var _ = Describe("Jstream", func() {
 			}
 		})
 
+		It("should be possible to get the channel of the stream", func() {
+			jch := NewStream(cfg, NewSequenceBreaker(50)).JobChannel()
+			i := 0
+			for range jch {
+				i++
+			}
+			Ω(i).Should(BeNumerically("==", 50))
+		})
+
 	})
 
 	Context("Standard error cases", func() {
@@ -237,6 +267,19 @@ var _ = Describe("Jstream", func() {
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).ShouldNot(BeNil())
 			Ω(stream.HasError()).Should(BeTrue())
+		})
+
+		It("should not allow a Buffer with negative size", func() {
+			config := Config{
+				Workflow: wfl.NewWorkflow(wfl.NewProcessContext()),
+				Template: wfl.NewTemplate(drmaa2interface.JobTemplate{
+					RemoteCommand: "/bin/sh",
+					Args:          []string{"-c", `echo $TASK_ID`},
+				}).AddIterator("tasks", wfl.NewEnvSequenceIterator("TASK_ID", 1, 1)),
+				BufferSize: -1,
+			}
+			stream := NewStream(config, NewSequenceBreaker(10))
+			Ω(stream.Error()).ShouldNot(BeNil())
 		})
 
 	})

@@ -219,7 +219,7 @@ func (g *Stream) apply(apply JobMap, maxParallel int) *Stream {
 	var coroutineControl chan bool
 
 	throttle := maxParallel
-	if throttle > 0 { // if negative then do not block at all
+	if throttle > 0 { // else do not block at all
 		coroutineControl = make(chan bool, throttle)
 	}
 
@@ -291,23 +291,23 @@ func (g *Stream) Collect() []*wfl.Job {
 // size.
 func (g *Stream) CollectN(size int) []*wfl.Job {
 	jobs := make([]*wfl.Job, 0, size)
-	if size <= 0 {
-		return jobs
-	}
-	i := 0
-	for job := range g.jch {
-		jobs = append(jobs, job)
-		i++
-		if i >= size {
-			break
+	if size > 0 {
+		i := 0
+		for job := range g.jch {
+			jobs = append(jobs, job)
+			i++
+			if i >= size {
+				break
+			}
 		}
 	}
 	return jobs
 }
 
 // Synchronize is a non-blocking call which starts a coroutine
-// which loop over all jobs in the stream and waits for each
-// job until it is finished and then returns the job.
+// which loops over all jobs in the stream and waits for each
+// job until it is finished and then returns the job in the
+// output stream.
 // The newly created output stream contains only finished jobs.
 // The order of the output stream is the same as in the incoming
 // stream.
@@ -341,6 +341,8 @@ func (g *Stream) Filter(filter Filter) *Stream {
 	return &Stream{jch: outch, config: g.config}
 }
 
+// JobChannel retuns the job channel of the job stream
+// for direct processing.
 func (g *Stream) JobChannel() chan *wfl.Job {
 	return g.jch
 }
