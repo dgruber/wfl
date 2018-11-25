@@ -6,7 +6,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
-operating systems, Docker, Kubernetes, Cloud Foundry, and HPC job schedulers can be
+operating systems, Docker, Singularity, Kubernetes, Cloud Foundry, and HPC job schedulers can be
 a tedios. Lots of repeating code is required. All workload management systems have a
 different API.
 
@@ -213,6 +213,7 @@ as parameters for them. In most cases only _RemoteCommand_, _Args_, _WorkingDire
 - [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
 - [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 - [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
+- [Singularity support](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/singularity)
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
@@ -226,6 +227,7 @@ and reports errors.
 
 [cloudfoundry](https://github.com/dgruber/wfl/blob/master/examples/cloudfoundry/cloudfoundry.go) demonstrates how a Cloud Foundry taks can be created.
 
+[Singularity containers](https://github.com/dgruber/wfl/blob/master/examples/singularity/singularity.go) can also be created which is helpful when managing a simple Singularity _wfl_ container workflow within a single HPC job either to fully exploit all resources and reduce the amount of HPC jobs.
 
 ## Creating a Workflow which is Executed as OS Processes
 

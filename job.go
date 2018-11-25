@@ -171,10 +171,13 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 		j.lastError = err
 		return j
 	}
-
 	if jt.JobCategory == "" {
-		// TODO RunT should not know about Docker
+		// TODO RunT should not know about container image in context
 		jt.JobCategory = j.wfl.ctx.defaultDockerImage
+	}
+	if j.wfl.js == nil {
+		j.lastError = errors.New("JobSession is nil")
+		return j
 	}
 	job, err := j.wfl.js.RunJob(jt)
 	j.lastError = err
@@ -391,6 +394,14 @@ func (j *Job) Success() bool {
 		if j.ExitStatus() == 0 {
 			return true
 		}
+	}
+	return false
+}
+
+// Errored returns if an error occurred at the last operation.
+func (j *Job) Errored() bool {
+	if j.lastError != nil {
+		return true
 	}
 	return false
 }

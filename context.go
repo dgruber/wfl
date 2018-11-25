@@ -132,6 +132,7 @@ func DRMAA2SessionManagerContext(sm drmaa2interface.SessionManager) *Context {
 	return &Context{sm: sm, ctxCreationErr: nil}
 }
 
+// ErrorTestContext always returns an error.
 func ErrorTestContext() *Context {
 	return &Context{sm: nil, ctxCreationErr: errors.New("error")}
 }
@@ -164,4 +165,34 @@ func NewKubernetesContextByCfg(cfg KubernetesConfig) *Context {
 // the workflow in Kubernetes.
 func NewKubernetesContext() *Context {
 	return NewKubernetesContextByCfg(KubernetesConfig{})
+}
+
+// SingularityConfig contains the default settings for the Singularity
+// containers.
+type SingularityConfig struct {
+	DefaultImage string
+	DBFile       string
+}
+
+// NewSingularityContext creates a new Context which allows to run the
+// jobs in Singularity containers. It only works with JobTemplate based
+// run methods (like RunT()) as it requires the JobCategory set to the
+// the Singularity container image.
+func NewSingularityContext() *Context {
+	return NewSingularityContextByCfg(SingularityConfig{})
+}
+
+// NewSingularityContextByCfg creates a new Context which allows to run
+// the jobs in Singularit containers. If the given SingularityConfig
+// has set the DefaultImage to valid Singularity image then the Run()
+// methods are using that container image. That image can be overriden
+// by the RunT() method when setting the JobCategory.
+func NewSingularityContextByCfg(cfg SingularityConfig) *Context {
+	if cfg.DBFile == "" {
+		cfg.DBFile = TmpFile()
+	}
+	sm, err := drmaa2os.NewSingularitySessionManager(cfg.DBFile)
+	return &Context{sm: sm,
+		defaultDockerImage: cfg.DefaultImage,
+		ctxCreationErr:     err}
 }

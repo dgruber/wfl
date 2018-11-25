@@ -1,0 +1,13 @@
+Bootstrap: docker 
+From: alpine 
+%runscript
+exec echo "This is the default runtime command!"
+%environment
+TESTVAR=wfl
+export TESTVAR 
+%labels
+AUTHOR info@gridengine.eu
+%post
+mkdir /shared
+echo "Created shared directory."
+

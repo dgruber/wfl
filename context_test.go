@@ -70,6 +70,24 @@ var _ = Describe("Context", func() {
 			})
 		})
 
+		Context("Singularity Context", func() {
+			It("should be possible to create a Singularity context", func() {
+				ctx := wfl.NewSingularityContext()
+				Ω(ctx).ShouldNot(BeNil())
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+			})
+			It("should be possible to create a Singularity context by config", func() {
+				ctx := wfl.NewSingularityContextByCfg(wfl.SingularityConfig{
+					DefaultImage: "",
+					DBFile:       "",
+				})
+				Ω(ctx).ShouldNot(BeNil())
+				err := ctx.Error()
+				Ω(err).Should(BeNil())
+			})
+		})
+
 		Context("Temporary DB file", func() {
 			It("should always be a different filename", func() {
 				files := make(map[string]interface{}, 100)

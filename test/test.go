@@ -30,6 +30,7 @@ func createProcBuild() (map[string]string, drmaa2interface.JobTemplate, *wfl.Job
 		"shell":          "../examples/shell/shell.go",
 		"stream":         "../examples/stream/stream.go",
 		"builderPattern": "../examples/builderPattern/builderPattern.go",
+		"singularity":    "../examples/singularity/singularity.go",
 	}
 
 	jtemplate := drmaa2interface.JobTemplate{
@@ -56,6 +57,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 		"shell":          "/go/src/github.com/dgruber/wfl/examples/shell/shell.go",
 		"stream":         "/go/src/github.com/dgruber/wfl/examples/stream/stream.go",
 		"builderPattern": "/go/src/github.com/dgruber/wfl/examples/builderPattern/builderPattern.go",
+		"singularity":    "/go/src/github.com/dgruber/wfl/examples/singularity/singularity.go",
 	}
 
 	goPath := os.Getenv("GOPATH")

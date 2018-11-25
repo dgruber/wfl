@@ -9,6 +9,7 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
 	"os"
@@ -21,6 +22,7 @@ const (
 	DockerSession                          // containers
 	CloudFoundrySession                    // application tasks
 	KubernetesSession                      // pods
+	SingularitySession                     // Singularity containers
 )
 
 type cfContact struct {
@@ -46,6 +48,8 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
 	case KubernetesSession:
 		return kubernetestracker.New(name, nil)
+	case SingularitySession:
+		return singularity.New(name)
 	}
 	return nil, errors.New("unknown job session type")
 }
@@ -81,8 +85,16 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 	return sm, nil
 }
 
+// NewKubernetesSessionManager creates a new session manager which uses
+// Kubernetes tasks as execution backend for jobs.
 func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, KubernetesSession)
+}
+
+// NewSingularitySessionManager creates a new session manager creating and
+// maintaining Singularity sessions.
+func NewSingularitySessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, SingularitySession)
 }
 
 func (sm *SessionManager) logErr(message string) error {
