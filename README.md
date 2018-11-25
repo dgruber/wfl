@@ -121,6 +121,17 @@ job workflow it makes sense to use the Kubernetes config.
    ctx := wfl.NewKubernetesContextByCfg(wfl.KubernetesConfig{DefaultImage: "busybox:latest"})
 ```
 
+[Singularity](https://en.wikipedia.org/wiki/Singularity_(software)) containers can be executed
+within the Singularity context. When setting the _DefaultImage_ (like in the Kubernetes Context)
+then then _Run()_ methods can be used otherwise the Container image must be specified in the 
+JobTemplate's _JobCategory_ field separately for each job. The _DefaultImage_
+can always be overridden by the _JobCategory_. Note that each task / job
+executes a separate Singularity container process.
+
+```go
+   ctx := wfl.NewSingularityContextByCfg(wfl.SingularityConfig{DefaultImage: ""}))
+```
+
 Contexts for other container engines or workload managers like DRMAA compatible HPC schedulers,
 etc. will be supported when the DRMAA2 job tracker implementation is available.
 
