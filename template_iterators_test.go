@@ -60,7 +60,7 @@ var _ = Describe("TemplateIterators", func() {
 		jt := drmaa2interface.JobTemplate{}
 
 		It("should return a new job template after the given duration", func() {
-			iter := wfl.NewTimeIterator(time.Millisecond * 25)
+			iter := wfl.NewTimeIterator(time.Millisecond * 30)
 			Ω(iter).ShouldNot(BeNil())
 			tmpl := wfl.NewTemplate(jt).AddIterator("timer", iter)
 			now := time.Now()
