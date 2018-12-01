@@ -34,7 +34,7 @@ func ImageBuilder(image, recipe string) error {
 	wf := wfl.NewWorkflow(wfl.NewProcessContext())
 
 	// remove existing image to prevent issues when rebuilding
-	wf.Run("rm", "alpine.simg")
+	wf.Run("rm", "alpine.simg").Wait()
 
 	// build image
 	job := wf.RunT(drmaa2interface.JobTemplate{

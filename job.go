@@ -171,6 +171,10 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 		j.lastError = err
 		return j
 	}
+	// merging only specific job template parameters
+	jt = mergeJobTemplateWithDefaultTemplate(jt, j.wfl.ctx.defaultTemplate)
+
+	// JobCategory overrides all at the moment...
 	if jt.JobCategory == "" {
 		// TODO RunT should not know about container image in context
 		jt.JobCategory = j.wfl.ctx.defaultDockerImage

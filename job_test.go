@@ -514,6 +514,28 @@ var _ = Describe("Job", func() {
 			Ω(job.LastError().Error()).Should(ContainSubstring("job not available"))
 		})
 
+		It("should use default JobTemplate settings from Process Context", func() {
+			template := drmaa2interface.JobTemplate{
+				JobName:    "jobname",
+				OutputPath: "/dev/stdout",
+				ErrorPath:  "/dev/stderr",
+			}
+			flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(wfl.ProcessConfig{
+				DefaultTemplate: template,
+			}))
+			job := flow.Run("sleep", "0").Wait()
+			rt := job.Template()
+			Ω(rt.JobName).Should(Equal("jobname"))
+			Ω(rt.OutputPath).Should(Equal("/dev/stdout"))
+			Ω(rt.ErrorPath).Should(Equal("/dev/stderr"))
+
+			job.Resubmit(1).Synchronize()
+			rt = job.Template()
+			Ω(rt.JobName).Should(Equal("jobname"))
+			Ω(rt.OutputPath).Should(Equal("/dev/stdout"))
+			Ω(rt.ErrorPath).Should(Equal("/dev/stderr"))
+		})
+
 	})
 
 	Context("Use Cases", func() {

@@ -15,6 +15,9 @@ type Context struct {
 	ctxCreationErr     error
 	sm                 drmaa2interface.SessionManager
 	defaultDockerImage string
+	// defaultTemplate contains all default settings for job submission
+	// which are copied (if not set) to Run() or RunT() methods
+	defaultTemplate drmaa2interface.JobTemplate
 }
 
 // OnError executes a function when an error occurred during
@@ -54,12 +57,18 @@ func TmpFile() string {
 
 // ProcessConfig contains the configuration for the process context.
 type ProcessConfig struct {
+	// DBFile is the local file which contains the internal state DB.
 	DBFile string
+	// DefaultTemplate contains the default job submission settings if
+	// not overridden by the RunT() like methods.
+	DefaultTemplate drmaa2interface.JobTemplate
 }
 
 // NewProcessContext returns a new *Context which manages processes.
 func NewProcessContext() *Context {
-	return NewProcessContextByCfg(ProcessConfig{DBFile: ""})
+	return NewProcessContextByCfg(ProcessConfig{
+		DBFile:          "",
+		DefaultTemplate: drmaa2interface.JobTemplate{}})
 }
 
 // NewProcessContextByCfg returns a new *Context which manages processes
@@ -69,7 +78,10 @@ func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewDefaultSessionManager(cfg.DBFile)
-	return &Context{sm: sm, ctxCreationErr: err}
+	return &Context{
+		sm:              sm,
+		defaultTemplate: cfg.DefaultTemplate,
+		ctxCreationErr:  err}
 }
 
 // DockerConfig determines configuration options for the Docker containers
@@ -79,6 +91,7 @@ func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 type DockerConfig struct {
 	DBFile             string
 	DefaultDockerImage string
+	DefaultTemplate    drmaa2interface.JobTemplate
 }
 
 // NewDockerContext creates a new Context containing a DRMAA2 session manager
@@ -93,16 +106,21 @@ func NewDockerContextByCfg(cfg DockerConfig) *Context {
 		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewDockerSessionManager(cfg.DBFile)
-	return &Context{sm: sm, defaultDockerImage: cfg.DefaultDockerImage, ctxCreationErr: err}
+	return &Context{
+		sm:                 sm,
+		defaultDockerImage: cfg.DefaultDockerImage,
+		ctxCreationErr:     err,
+		defaultTemplate:    cfg.DefaultTemplate,
+	}
 }
 
-// CloudFoundryConfig descibes where Cloud Foundry (CC API) is found and can be
-// accessed.
+// CloudFoundryConfig descibes where Cloud Foundry (CC API) is found and can be accessed.
 type CloudFoundryConfig struct {
-	APIAddr  string
-	User     string
-	Password string
-	DBFile   string
+	APIAddr         string
+	User            string
+	Password        string
+	DBFile          string
+	DefaultTemplate drmaa2interface.JobTemplate
 }
 
 // NewCloudFoundryContext creates a new Context which allows creating Cloud Foundry
@@ -125,24 +143,35 @@ func NewCloudFoundryContextByCfg(cfg CloudFoundryConfig) *Context {
 		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewCloudFoundrySessionManager(cfg.APIAddr, cfg.User, cfg.Password, cfg.DBFile)
-	return &Context{sm: sm, ctxCreationErr: err}
+	return &Context{
+		sm:              sm,
+		ctxCreationErr:  err,
+		defaultTemplate: cfg.DefaultTemplate,
+	}
 }
 
 func DRMAA2SessionManagerContext(sm drmaa2interface.SessionManager) *Context {
-	return &Context{sm: sm, ctxCreationErr: nil}
+	return &Context{
+		sm:             sm,
+		ctxCreationErr: nil,
+	}
 }
 
 // ErrorTestContext always returns an error.
 func ErrorTestContext() *Context {
-	return &Context{sm: nil, ctxCreationErr: errors.New("error")}
+	return &Context{
+		sm:             nil,
+		ctxCreationErr: errors.New("error"),
+	}
 }
 
 // KubernetesConfig describes the default container image to use when no other
 // is specified in the JobCategory of the JobTemplate. This allows to use the
 // Run() method instead of RunT().
 type KubernetesConfig struct {
-	DefaultImage string
-	DBFile       string
+	DefaultImage    string
+	DBFile          string
+	DefaultTemplate drmaa2interface.JobTemplate
 }
 
 // NewKubernetesContextByCfg creates a new Context with kubernetes as
@@ -158,6 +187,7 @@ func NewKubernetesContextByCfg(cfg KubernetesConfig) *Context {
 		sm:                 sessionManager,
 		defaultDockerImage: cfg.DefaultImage,
 		ctxCreationErr:     err,
+		defaultTemplate:    cfg.DefaultTemplate,
 	}
 }
 
@@ -170,8 +200,9 @@ func NewKubernetesContext() *Context {
 // SingularityConfig contains the default settings for the Singularity
 // containers.
 type SingularityConfig struct {
-	DefaultImage string
-	DBFile       string
+	DefaultImage    string
+	DBFile          string
+	DefaultTemplate drmaa2interface.JobTemplate
 }
 
 // NewSingularityContext creates a new Context which allows to run the
@@ -194,5 +225,7 @@ func NewSingularityContextByCfg(cfg SingularityConfig) *Context {
 	sm, err := drmaa2os.NewSingularitySessionManager(cfg.DBFile)
 	return &Context{sm: sm,
 		defaultDockerImage: cfg.DefaultImage,
-		ctxCreationErr:     err}
+		ctxCreationErr:     err,
+		defaultTemplate:    cfg.DefaultTemplate,
+	}
 }
