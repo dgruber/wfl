@@ -17,6 +17,10 @@
 
 privateManifest.yml
 
+coverage.txt
+
+drmaa2ostest
+singularity
 builderPattern
 stream
 shell
@@ -43,6 +47,9 @@ test/simple
 test/template
 test/docker
 test/cloudfoundry
+
+alpine.simg
+defaultTemplate
 
 1.db
 2.db

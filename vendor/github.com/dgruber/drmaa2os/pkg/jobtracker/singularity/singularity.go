@@ -2,11 +2,12 @@ package singularity
 
 import (
 	"fmt"
+	"os/exec"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
-	"os/exec"
-	"time"
 )
 
 // Tracker tracks singularity container.
@@ -31,17 +32,12 @@ func (dt *Tracker) ListJobs() ([]string, error) {
 	return dt.processTracker.ListJobs()
 }
 
-func createCommandAndArgs(jt drmaa2interface.JobTemplate) (string, []string) {
-	return "singularity", append([]string{"exec", jt.JobCategory, jt.RemoteCommand}, jt.Args...)
-}
-
 // AddJob creates a new Singularity container.
 func (dt *Tracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 	if jt.JobCategory == "" {
 		return "", fmt.Errorf("Singularity container image not specified")
 	}
-	jt.RemoteCommand, jt.Args = createCommandAndArgs(jt)
-	return dt.processTracker.AddJob(jt)
+	return dt.processTracker.AddJob(createProcessJobTemplate(jt))
 }
 
 // AddArrayJob creates (end - begin)/step Singularity containers.

@@ -2,13 +2,14 @@ package simpletracker
 
 import (
 	"errors"
-	"github.com/dgruber/drmaa2interface"
-	"github.com/scalingdata/gosigar"
 	"io"
 	"os"
 	"os/exec"
 	"sync"
 	"syscall"
+
+	"github.com/dgruber/drmaa2interface"
+	"github.com/scalingdata/gosigar"
 )
 
 func currentEnv() map[string]string {
@@ -31,7 +32,9 @@ func restoreEnv(env map[string]string) {
 func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChannel chan JobEvent) (int, error) {
 	cmd := exec.Command(t.RemoteCommand, t.Args...)
 
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 
 	if valid, err := validateJobTemplate(t); valid == false {
 		return 0, err
@@ -131,7 +134,11 @@ func stateByPid(pid int) (drmaa2interface.JobState, error) {
 }
 
 func KillPid(pid int) error {
-	return syscall.Kill(-pid, syscall.SIGKILL)
+	pgid, err := syscall.Getpgid(pid)
+	if err != nil {
+		return syscall.Kill(-pid, syscall.SIGKILL)
+	}
+	return syscall.Kill(-pgid, syscall.SIGKILL)
 }
 
 func SuspendPid(pid int) error {

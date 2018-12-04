@@ -176,7 +176,6 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 
 	// JobCategory overrides all at the moment...
 	if jt.JobCategory == "" {
-		// TODO RunT should not know about container image in context
 		jt.JobCategory = j.wfl.ctx.defaultDockerImage
 	}
 	if j.wfl.js == nil {

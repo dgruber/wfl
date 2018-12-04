@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
 )
@@ -42,12 +43,10 @@ func ImageBuilder(image, recipe string) error {
 		Args:          []string{"singularity", "build", image, recipe},
 		OutputPath:    "/dev/stdout",
 		ErrorPath:     "/dev/stderr",
-	})
+	}).OnError(func(e error) {
+		panic(e)
+	}).Wait()
 
-	if job.Errored() {
-		return errors.New("errored")
-	}
-	// wait implicitly until the process is finished
 	if job.Failed() {
 		return errors.New("building image failed")
 	}
