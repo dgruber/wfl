@@ -14,6 +14,7 @@ const (
 	infoLevel    string = "INFO"
 	warningLevel string = "WARNING"
 	errorLevel   string = "ERROR"
+	noneLevel    string = "NONE"
 )
 
 // Logger defines all methods required by an logger.
@@ -39,6 +40,8 @@ func getDefaultLoggerLevel() logrus.Level {
 		return logrus.WarnLevel
 	case errorLevel:
 		return logrus.ErrorLevel
+	case noneLevel:
+		return logrus.PanicLevel
 	}
 	return logrus.ErrorLevel
 }
