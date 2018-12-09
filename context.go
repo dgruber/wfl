@@ -3,11 +3,12 @@ package wfl
 import (
 	"errors"
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
-	"github.com/dgruber/drmaa2os"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 )
 
 // Context contains a pointer to execution backend and configuration for it.
@@ -150,6 +151,8 @@ func NewCloudFoundryContextByCfg(cfg CloudFoundryConfig) *Context {
 	}
 }
 
+// DRMAA2SessionManagerContext creates a new Context using any given DRMAA2
+// Session manager (implementing the drmaa2interface).
 func DRMAA2SessionManagerContext(sm drmaa2interface.SessionManager) *Context {
 	return &Context{
 		sm:             sm,

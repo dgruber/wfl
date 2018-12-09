@@ -8,9 +8,10 @@ import (
 
 	"errors"
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
 	"os"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Job", func() {
@@ -511,7 +512,7 @@ var _ = Describe("Job", func() {
 
 		It("should error at Then() in case when prev. job is not found", func() {
 			job := wfl.EmptyJob().Then(func(j drmaa2interface.Job) {})
-			Ω(job.LastError().Error()).Should(ContainSubstring("job not available"))
+			Ω(job.LastError().Error()).Should(ContainSubstring("task not available"))
 		})
 
 		It("should use default JobTemplate settings from Process Context", func() {

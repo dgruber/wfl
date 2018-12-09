@@ -59,7 +59,12 @@ process itself.
 
 _wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
 
-Jobs can also be processed in [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
+Experimental: Jobs can also be processed in [job control streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
+
+First support for logging is also available. Log levels can be controlled by environment variables
+(_export WFL_LOGLEVEL=DEBUG_ or _INFO_ _WARNING_ _ERROR_). Applications can use the same
+logging facility by getting the logger from the workflow (_workflow.Logger()_) or registering
+your own logger in a workflow _(SetLogger(Logger interface)_).
 
 ### Getting Started
 

@@ -1,13 +1,30 @@
 package wfl_test
 
 import (
+	"context"
+
 	"github.com/dgruber/wfl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"os"
+
+	"github.com/dgruber/drmaa2interface"
 )
+
+type testLogger struct {
+	errors int
+}
+
+func (tl *testLogger) Begin(ctx context.Context, f string) {}
+
+func (tl *testLogger) Infof(ctx context.Context, s string, args ...interface{}) {}
+
+func (tl *testLogger) Warningf(ctx context.Context, s string, args ...interface{}) {}
+
+func (tl *testLogger) Errorf(ctx context.Context, s string, args ...interface{}) {
+	tl.errors++
+}
 
 var _ = Describe("Workflow", func() {
 
@@ -108,6 +125,56 @@ var _ = Describe("Workflow", func() {
 
 			wf2 := wfl.NewWorkflow(ctx)
 			Ω(wf2).ShouldNot(BeNil())
+		})
+
+	})
+
+	Context("Logger", func() {
+
+		BeforeEach(func() {
+			os.Remove("tmp.db")
+		})
+
+		It("should be possible to get the default logger", func() {
+			ctx := wfl.NewProcessContext()
+			err := ctx.Error()
+
+			Ω(err).Should(BeNil())
+			Ω(ctx).ShouldNot(BeNil())
+
+			flow := wfl.NewWorkflow(ctx)
+			Ω(flow).ShouldNot(BeNil())
+
+			logger := flow.Logger()
+			Ω(logger).ShouldNot(BeNil())
+
+			// using the logger from the app
+			logger.Infof(context.TODO(), "message")
+
+			// setting logger to nil is not allowed
+			flow.SetLogger(nil)
+			logger = flow.Logger()
+			Ω(logger).ShouldNot(BeNil())
+		})
+
+		It("should be possible to change the logger", func() {
+			ctx := wfl.NewProcessContext()
+			err := ctx.Error()
+
+			Ω(err).Should(BeNil())
+			Ω(ctx).ShouldNot(BeNil())
+
+			flow := wfl.NewWorkflow(ctx)
+			Ω(flow).ShouldNot(BeNil())
+
+			flow.SetLogger(nil)
+			logger := flow.Logger()
+			Ω(logger).ShouldNot(BeNil())
+
+			tl := testLogger{}
+			flow.SetLogger(&tl)
+			tl.Errorf(context.TODO(), "error")
+			Ω(tl.errors).Should(BeNumerically("==", 1))
 		})
 
 	})

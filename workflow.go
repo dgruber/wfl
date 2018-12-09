@@ -3,7 +3,9 @@ package wfl
 import (
 	"errors"
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/wfl/pkg/log"
 )
 
 // Workflow contains the backend context and a job session. The DRMAA2 job session
@@ -12,6 +14,7 @@ type Workflow struct {
 	ctx                   *Context
 	js                    drmaa2interface.JobSession
 	workflowCreationError error
+	log                   log.Logger
 }
 
 // NewWorkflow creates a new Workflow based on the given execution context.
@@ -30,9 +33,30 @@ func NewWorkflow(context *Context) *Workflow {
 				err = fmt.Errorf("Error creating (%s) or opening (%s) Job Session \"wfl\"\n", errJS.Error(), errOpenJS.Error())
 			}
 		}
-		return &Workflow{ctx: context, js: js, workflowCreationError: err}
+		return &Workflow{ctx: context,
+			js:                    js,
+			workflowCreationError: err,
+			log:                   log.NewDefaultLogger(),
+		}
 	}
-	return &Workflow{workflowCreationError: err, ctx: nil}
+	return &Workflow{ctx: nil,
+		workflowCreationError: err,
+		log:                   log.NewDefaultLogger(),
+	}
+}
+
+// Logger return the current logger of the workflow.
+func (w *Workflow) Logger() log.Logger {
+	return w.log
+}
+
+// SetLogger sets a new logger for the workflow. Note that
+// nil loggers are not accepted.
+func (w *Workflow) SetLogger(log log.Logger) *Workflow {
+	if log != nil {
+		w.log = log
+	}
+	return w
 }
 
 // OnError executes a function if happened during creating a job session
