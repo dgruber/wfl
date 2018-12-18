@@ -171,17 +171,17 @@ Jobs are the main objects in _wfl_. A job defines helper methods. Many of them r
 
 Methods can be classified in blocking, non-blocking, job template based, function based, and error handlers.
 
-Job submission:
+### Job Submission
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
 |  Run() |  Starts a process, container, or submits a task and comes back immediately | no | | 
 |  RunT() |  Like above but with a JobTemplate as parameter | no | |
-|  Resubmit() | Run().Run().Run()... | no | | 
+|  Resubmit() | Submits a job _n_-times (Run().Run().Run()...) | no | | 
 |  RunEvery() | Submits a task every d _time.Duration_ | yes | |
 |  RunEveryT() | Like _RunEvery()_ but with JobTemplate as param | yes | |
 
-Job control:
+### Job Control
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
@@ -189,7 +189,7 @@ Job control:
 | Resume()|  Continues a task (e.g. sending SIGCONT)... | | |
 | Kill() | Stops process (SIGKILL), container, task, job immediately. | | |
 
-Function execution:
+### Function Execution
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
@@ -199,7 +199,7 @@ Function execution:
 | OnFailure() | Executes a function if the task failed (exit code != 0)  | yes | |
 | OnError() | Executes a function if the task could not be created  | yes | |
 
-Blocker:
+### Blocker
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
@@ -207,23 +207,25 @@ Blocker:
 | Wait() | Waits until the task submitted latest finished | yes | |
 | Synchronize() | Waits until all submitted tasks finished | yes | |
 
-Job flow control:
+### Job Flow Control
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
 | ThenRun() | Wait() (last task finished) followed by an async Run() | partially | | 
 | ThenRunT() | ThenRun() with template | partially | | 
 | OnSuccessRun() | Wait() if Success() then Run() | partially | |
+| OnSuccessRunT() | OnSuccessRun() but with template as param | partially | |
 | OnFailureRun() | Wait() if Failed() then Run() | partially | |
+| OnFailureRunT() | OnFailureRun() but with template as param | partially | |
 | Retry() | wait() + !success() + resubmit() + wait() + !success() | yes | |
 | AnyFailed() | Cchecks if one of the tasks in the job failed | yes | |
 
-Job status and general checks:
+### Job Status and General Checks
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- | 
-| JobID() | Returns the ID of the submitted job. | no | |
-| JobInfo() | Returns the DRMAA2 JobInfo of the job.  | no | |
+| JobID() | Returns the ID of the submitted job | no | |
+| JobInfo() | Returns the DRMAA2 JobInfo of the job  | no | |
 | Template() |   | no | | 
 | State() |   | no | | 
 | LastError() |   | no | | 
@@ -375,18 +377,18 @@ After completion of a task run multiple branches of tasks.
         wfl.NewJob(wfl.NewWorkflow(ctx)).
             TagWith("BranchA").
             Run("sleep", "1").
-			ThenRun("sleep", "3").
+            ThenRun("sleep", "3").
             Synchronize().
-			Notify(notifier)
+            Notify(notifier)
     }
 
     go func() {
         wfl.NewJob(wfl.NewWorkflow(ctx)).
             TagWith("BranchB").
             Run("sleep", "1").
-			ThenRun("sleep", "3").
+            ThenRun("sleep", "3").
             Synchronize().
-			Notify(notifier)
+            Notify(notifier)
     }
 
     notifier.ReceiveJob()
