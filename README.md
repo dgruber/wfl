@@ -173,51 +173,63 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 
 Job submission:
 
-* Run() -> Starts a process, container, or submits a task and comes back immediately
-* RunT() -> Like above but with a JobTemplate as parameter
-* Resubmit() -> Run().Run().Run()...
-* RunEvery() -> Submits a task every d time.Duration
-* RunEveryT()
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+|  Run() |  Starts a process, container, or submits a task and comes back immediately | no | | 
+|  RunT() |  Like above but with a JobTemplate as parameter | no | |
+|  Resubmit() | Run().Run().Run()... | no | | 
+|  RunEvery() | Submits a task every d _time.Duration_ | yes | |
+|  RunEveryT() | Like _RunEvery()_ but with JobTemplate as param | yes | |
 
 Job control:
 
-* Suspend() -> Stops a task from execution (e.g. sending SIGTSTP to the process)...
-* Resume() -> Continues a task (e.g. sending SIGCONT)...
-* Kill()
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+| Suspend() | Stops a task from execution (e.g. sending SIGTSTP to the process group)... | | |
+| Resume()|  Continues a task (e.g. sending SIGCONT)... | | |
+| Kill() | Stops process (SIGKILL), container, task, job immediately. | | |
 
 Function execution:
 
-* Do() -> Executes a function
-* Then() -> Waits for end of process and executes function
-* OnSuccess() -> Executes a function if the task run successfully (exit code 0)
-* OnFailure() -> Executes a function if the task failed (exit code != 0)
-* OnError() -> Executes a function if the task could not be created
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+| Do() | Executes a Go function | yes | |
+| Then() | Waits for end of process and executes a Go function | yes | |
+| OnSuccess() | Executes a function if the task run successfully (exit code 0)  | yes | |
+| OnFailure() | Executes a function if the task failed (exit code != 0)  | yes | |
+| OnError() | Executes a function if the task could not be created  | yes | |
 
 Blocker:
 
-* After()
-* Wait()
-* Synchronize()
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+| After() | Blocks a specific amount of time and continues | yes | | 
+| Wait() | Waits until the task submitted latest finished | yes | |
+| Synchronize() | Waits until all submitted tasks finished | yes | |
 
 Job flow control:
 
-* ThenRun() // wait() + run()
-* ThenRunT()
-* OnSuccessRun() // wait() + success() + run()
-* OnFailureRun()
-* Retry() // wait() + !success() + resubmit() + wait() + !success() ...
-* AnyFailed() // checks if one of the tasks in the job failed
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+| ThenRun() | Wait() (last task finished) followed by an async Run() | partially | | 
+| ThenRunT() | ThenRun() with template | partially | | 
+| OnSuccessRun() | Wait() if Success() then Run() | partially | |
+| OnFailureRun() | Wait() if Failed() then Run() | partially | |
+| Retry() | wait() + !success() + resubmit() + wait() + !success() | yes | |
+| AnyFailed() | Cchecks if one of the tasks in the job failed | yes | |
 
 Job status and general checks:
 
-* JobID() -> Returns the ID of the submitted job.
-* JobInfo() -> Returns the DRMAA2 JobInfo of the job. 
-* Template() 
-* State()
-* LastError()
-* Failed()
-* Success()
-* ExitStatus()
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- | 
+| JobID() | Returns the ID of the submitted job. | no | |
+| JobInfo() | Returns the DRMAA2 JobInfo of the job.  | no | |
+| Template() |   | no | | 
+| State() |   | no | | 
+| LastError() |   | no | | 
+| Failed() |   | no | | 
+| Success() |   | no | | 
+| ExitStatus() |   | no | | 
 
 ## JobTemplate
 
@@ -326,5 +338,144 @@ In order to run jobs depending on the exit status the _OnFailure_ and _OnSuccess
 For executing a function on a submission error _OnError()_ can be used.
 
 More methods can be found in the sources.
+
+## Basic Workflow Patterns
+
+### Sequence
+
+The successor task runs after the completion of the pre-decessor task.
+
+```go
+    flow := wfl.NewWorkflow(ctx)
+    flow.Run("echo", "first task").ThenRun("echo", "second task")
+    ...
+```
+or
+
+```go
+    flow := wfl.NewWorkflow(ctx)
+    job := flow.Run("echo", "first task")
+    job.Wait()
+    job.Run("echo", "second task")
+    ...
+```
+
+### Parallel Split
+
+After completion of a task run multiple branches of tasks.
+
+```go
+
+    flow := wfl.NewWorkflow(ctx)
+    flow.Run("echo", "first task").Wait()
+
+    notifier := wfl.NewNotifier()
+
+    go func() {
+        wfl.NewJob(wfl.NewWorkflow(ctx)).
+            TagWith("BranchA").
+            Run("sleep", "1").
+			ThenRun("sleep", "3").
+            Synchronize().
+			Notify(notifier)
+    }
+
+    go func() {
+        wfl.NewJob(wfl.NewWorkflow(ctx)).
+            TagWith("BranchB").
+            Run("sleep", "1").
+			ThenRun("sleep", "3").
+            Synchronize().
+			Notify(notifier)
+    }
+
+    notifier.ReceiveJob()
+    notifier.ReceiveJob()
+
+    ...
+```
+
+### Synchronization of Tasks
+
+Wait until all tasks of a job which are running in parallel are finished.
+
+```go
+    flow := wfl.NewWorkflow(ctx)
+    flow.Run("echo", "first task").
+        Run("echo", "second task").
+        Run("echo", "third task").
+        Synchronize()
+
+```
+
+### Synchronization of Branches
+
+Wait until all branches of a workflow are finished.
+
+```go
+
+    notifier := wfl.NewNotifier()
+
+    go func() {
+        wfl.NewJob(wfl.NewWorkflow(ctx)).
+            TagWith("BranchA").
+            Run("sleep", "1").
+            Wait().
+			Notify(notifier)
+    }
+
+    go func() {
+        wfl.NewJob(wfl.NewWorkflow(ctx)).
+            TagWith("BranchB").
+            Run("sleep", "1").
+            Wait().
+			Notify(notifier)
+    }
+
+    notifier.ReceiveJob()
+    notifier.ReceiveJob()
+
+    ...
+```
+
+### Exclusive Choice
+
+```go
+    flow := wfl.NewWorkflow(ctx)
+    job := flow.Run("echo", "first task")
+    job.Wait()
+
+    if job.Success() {
+        // do something
+    } else {
+        // do something else
+    }
+    ...
+```
+
+### Fork Pattern
+
+When a task is finished _n_ tasks needs to be started in parallel.
+
+```go
+    job := wfl.NewWorkflow(ctx).Run("echo", "first task").
+        ThenRun("echo", "parallel task 1").
+        Run("echo", "parallel task 2").
+        Run("echo", "parallel task 3")
+    ...
+```
+
+or
+
+```go
+    flow := wfl.NewWorkflow(ctx)
+    
+    job := flow.Run("echo", "first task")
+    job.Wait()
+    for i := 1; i <= 3; i++ {
+        job.Run("echo", fmt.Sprintf("parallel task %d", i))
+    }
+    ...
+```
 
 For missing functionality or bugs please open an issue on github. Contributions welcome!
