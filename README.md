@@ -235,7 +235,8 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 
 ## JobTemplate
 
-JobTemplates are specifying the details about a job. In the simplest case the job is specified by the application name and its arguments like it is typically done in the OS shell. In that case the _Run()_ methods (_ThenRun()_, _OnSuccessRun()_, _OnFailureRun()_) can be used. If more details for specifying the jobs are required the _RunT()_ methods needs to be used.
+JobTemplates are specifying the details about a job. In the simplest case the job is specified by the application name and its arguments like it is typically done in the OS shell. In that case the _Run()_ methods (_ThenRun()_, _OnSuccessRun()_, _OnFailureRun()_) can be used. Job template based methods (like _RunT()_) can be completely avoided by providing a
+default template when creating the context (_...ByConfig()_). Then each _Run()_ inherits the settings (like _JobCategory_ for the container image name and _OutputPath_ for redirecting output to _stdout_). If more details for specifying the jobs are required the _RunT()_ methods needs to be used.
 I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa2interface/blob/master/jobtemplate.go)
 as parameters for them. In most cases only _RemoteCommand_, _Args_, _WorkingDirectory_, _JobCategory_, _JobEnvironment_,  _StageInFiles_ are evaluated. Functionality and semantic is up to the underlying [drmaa2os job tracker](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker).
 
