@@ -409,6 +409,7 @@ var _ = Describe("Job", func() {
 
 			Ω(err).ShouldNot(BeNil())
 			Ω(err.Error()).Should(ContainSubstring("no workflow defined"))
+			Ω(job.Errored()).Should(BeTrue())
 
 			job.Wait()
 		})
@@ -418,6 +419,7 @@ var _ = Describe("Job", func() {
 			err := job.LastError()
 			Ω(job).ShouldNot(BeNil())
 			Ω(err).ShouldNot(BeNil())
+			Ω(job.Errored()).Should(BeTrue())
 		})
 
 		It("should error when there is no JobTemplate", func() {
@@ -425,6 +427,7 @@ var _ = Describe("Job", func() {
 			tmpl := emptyJob.Template()
 			Ω(tmpl).Should(BeNil())
 			Ω(emptyJob.LastError()).ShouldNot(BeNil())
+			Ω(emptyJob.Errored()).Should(BeTrue())
 		})
 
 		It("should error when no context is defined in a job", func() {
@@ -436,6 +439,7 @@ var _ = Describe("Job", func() {
 
 			Ω(err).ShouldNot(BeNil())
 			Ω(err.Error()).Should(ContainSubstring("no context defined"))
+			Ω(job.Errored()).Should(BeTrue())
 		})
 
 		It("should error when suspending, resuming or killing an empty job", func() {
@@ -444,10 +448,12 @@ var _ = Describe("Job", func() {
 			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
 			job.Resume()
+			Ω(job.Errored()).Should(BeTrue())
 			Ω(job.LastError()).ShouldNot(BeNil())
 			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
 			job.Kill()
+			Ω(job.Errored()).Should(BeTrue())
 			Ω(job.LastError()).ShouldNot(BeNil())
 			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 
@@ -456,6 +462,7 @@ var _ = Describe("Job", func() {
 		It("should error when getting the state for an empty job", func() {
 			job := wfl.EmptyJob()
 			state := job.State()
+			Ω(job.Errored()).Should(BeTrue())
 			Ω(job.LastError()).ShouldNot(BeNil())
 			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 			Ω(state).Should(BeNumerically("==", drmaa2interface.Undetermined))
@@ -464,6 +471,7 @@ var _ = Describe("Job", func() {
 		It("should error when getting a template for an empty job", func() {
 			job := wfl.EmptyJob()
 			template := job.Template()
+			Ω(job.Errored()).Should(BeTrue())
 			Ω(job.LastError()).ShouldNot(BeNil())
 			Ω(job.LastError().Error()).Should(ContainSubstring("job task not available"))
 			Ω(template).Should(BeNil())
@@ -471,6 +479,7 @@ var _ = Describe("Job", func() {
 
 		It("should error when resubmit is done for an empty job", func() {
 			job := wfl.EmptyJob().Resubmit(10)
+			Ω(job.Errored()).Should(BeTrue())
 			Ω(job.LastError()).ShouldNot(BeNil())
 			Ω(job.LastError().Error()).Should(Equal("job not available"))
 		})

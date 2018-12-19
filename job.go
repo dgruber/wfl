@@ -49,52 +49,6 @@ func EmptyJob() *Job {
 	return &Job{}
 }
 
-func (j *Job) lastJob() *task {
-	if len(j.tasklist) == 0 {
-		return nil
-	}
-	return j.tasklist[len(j.tasklist)-1]
-}
-
-func (j *Job) jobCheck() (drmaa2interface.Job, error) {
-	if task := j.lastJob(); task == nil {
-		j.errorf(j.ctx, "jobCheck(): task is nil")
-		return nil, errors.New("job task not available")
-	} else if task.job == nil {
-		j.errorf(j.ctx, "jobCheck(): task has no drmaa2 job")
-		return nil, errors.New("job not available")
-	} else {
-		return task.job, nil
-	}
-}
-
-func (j *Job) begin(ctx context.Context, f string) {
-	if j == nil || j.wfl == nil || j.wfl.log == nil {
-		return
-	}
-	j.wfl.log.Begin(ctx, f)
-}
-
-func (j *Job) infof(ctx context.Context, s string, args ...interface{}) {
-	if j == nil || j.wfl == nil || j.wfl.log == nil {
-		return
-	}
-	j.wfl.log.Infof(ctx, s, args...)
-}
-func (j *Job) warningf(ctx context.Context, s string, args ...interface{}) {
-	if j == nil || j.wfl == nil || j.wfl.log == nil {
-		return
-	}
-	j.wfl.log.Warningf(ctx, s, args...)
-}
-
-func (j *Job) errorf(ctx context.Context, s string, args ...interface{}) {
-	if j == nil || j.wfl == nil || j.wfl.log == nil {
-		return
-	}
-	j.wfl.log.Errorf(ctx, s, args...)
-}
-
 // Job Sequence Properties
 
 // TagWith tags a job with a string for identification. Global for all tasks of the job.
@@ -191,20 +145,6 @@ func (j *Job) JobInfos() []drmaa2interface.JobInfo {
 		}
 	}
 	return jis
-}
-
-// ------------
-// NON-Blocking
-// ------------
-
-func (j *Job) checkCtx() error {
-	if j.wfl == nil {
-		return errors.New("no workflow defined")
-	}
-	if j.wfl.ctx == nil {
-		return errors.New("no context defined")
-	}
-	return nil
 }
 
 // Run submits a task which executes the given command and args. The command
@@ -343,8 +283,6 @@ func (j *Job) AnyFailed() bool {
 	}
 	return false
 }
-
-// Blocking
 
 // RunEvery provides the same functionally like RunEveryT but the job is created
 // based on the given command with the arguments.
@@ -558,18 +496,6 @@ func (j *Job) ThenRun(cmd string, args ...string) *Job {
 func (j *Job) ThenRunT(jt drmaa2interface.JobTemplate) *Job {
 	j.begin(j.ctx, "ThenRunT()")
 	return j.Wait().RunT(jt)
-}
-
-func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
-	job, err := j.jobCheck()
-	if err != nil {
-		return drmaa2interface.Undetermined
-	}
-	lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
-	if lastError != nil {
-		return drmaa2interface.Undetermined
-	}
-	return job.GetState()
 }
 
 // OnSuccess executes the given function after the previously submitted

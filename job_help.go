@@ -1,6 +1,8 @@
 package wfl
 
 import (
+	"context"
+	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/mitchellh/copystructure"
 )
@@ -62,4 +64,72 @@ func mergeStringMap(dst, src map[string]string) map[string]string {
 		}
 	}
 	return dst
+}
+
+func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
+	job, err := j.jobCheck()
+	if err != nil {
+		return drmaa2interface.Undetermined
+	}
+	lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
+	if lastError != nil {
+		return drmaa2interface.Undetermined
+	}
+	return job.GetState()
+}
+
+func (j *Job) lastJob() *task {
+	if len(j.tasklist) == 0 {
+		return nil
+	}
+	return j.tasklist[len(j.tasklist)-1]
+}
+
+func (j *Job) jobCheck() (drmaa2interface.Job, error) {
+	if task := j.lastJob(); task == nil {
+		j.errorf(j.ctx, "jobCheck(): task is nil")
+		return nil, errors.New("job task not available")
+	} else if task.job == nil {
+		j.errorf(j.ctx, "jobCheck(): task has no drmaa2 job")
+		return nil, errors.New("job not available")
+	} else {
+		return task.job, nil
+	}
+}
+
+func (j *Job) checkCtx() error {
+	if j.wfl == nil {
+		return errors.New("no workflow defined")
+	}
+	if j.wfl.ctx == nil {
+		return errors.New("no context defined")
+	}
+	return nil
+}
+
+func (j *Job) begin(ctx context.Context, f string) {
+	if j == nil || j.wfl == nil || j.wfl.log == nil {
+		return
+	}
+	j.wfl.log.Begin(ctx, f)
+}
+
+func (j *Job) infof(ctx context.Context, s string, args ...interface{}) {
+	if j == nil || j.wfl == nil || j.wfl.log == nil {
+		return
+	}
+	j.wfl.log.Infof(ctx, s, args...)
+}
+func (j *Job) warningf(ctx context.Context, s string, args ...interface{}) {
+	if j == nil || j.wfl == nil || j.wfl.log == nil {
+		return
+	}
+	j.wfl.log.Warningf(ctx, s, args...)
+}
+
+func (j *Job) errorf(ctx context.Context, s string, args ...interface{}) {
+	if j == nil || j.wfl == nil || j.wfl.log == nil {
+		return
+	}
+	j.wfl.log.Errorf(ctx, s, args...)
 }
