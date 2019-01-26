@@ -1,2 +1,2 @@
 #!/bin/sh
-echo error 2>&1 
+echo error 1>&2 

@@ -57,34 +57,30 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 	hasStateCh := make(chan bool, 1)
 	defer close(hasStateCh)
 
-	quit := make(chan bool, 1)
-
 	go func() {
 		t := time.NewTicker(time.Millisecond * 100)
 		defer t.Stop()
 
+		timeoutTicker := time.NewTicker(timeout)
+		defer timeoutTicker.Stop()
+
 		for {
 			select {
+			case <-timeoutTicker.C:
+				hasStateCh <- false
+				return
 			case <-t.C:
 				if IsInExpectedState(jt.JobState(jobid), states...) {
 					hasStateCh <- true
 					return
 				}
-			case <-quit:
-				return
 			}
 		}
 	}()
 
-	ticker := time.NewTicker(timeout)
-	defer ticker.Stop()
-
-	select {
-	case <-hasStateCh:
-		return nil
-	case <-ticker.C:
-		quit <- true
+	reachedState := <-hasStateCh
+	if !reachedState {
 		return errors.New("timeout while waiting for job state")
 	}
-	return errors.New("unreachable code in WaitForState()")
+	return nil
 }

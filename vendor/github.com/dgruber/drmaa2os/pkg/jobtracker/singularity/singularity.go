@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
 
@@ -40,15 +39,14 @@ func (dt *Tracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 	return dt.processTracker.AddJob(createProcessJobTemplate(jt))
 }
 
-// AddArrayJob creates (end - begin)/step Singularity containers.
-// TODO: maxParallel is not evaluated
-func (dt *Tracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
-	return helper.AddArrayJobAsSingleJobs(jt, dt, begin, end, step)
+// AddArrayJob creates ~(end - begin)/step Singularity containers.
+func (dt *Tracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin, end, step, maxParallel int) (string, error) {
+	return dt.processTracker.AddArrayJob(createProcessJobTemplate(jt), begin, end, step, maxParallel)
 }
 
 // ListArrayJobs shows all containers which belong to a certain job array.
 func (dt *Tracker) ListArrayJobs(ID string) ([]string, error) {
-	return helper.ArrayJobID2GUIDs(ID)
+	return dt.processTracker.ListArrayJobs(ID)
 }
 
 // JobState returns the state of the Singularity container.
@@ -68,7 +66,7 @@ func (dt *Tracker) JobControl(jobid, state string) error {
 
 // Wait blocks until either one of the given states is reached or when the timeout occurs.
 func (dt *Tracker) Wait(jobid string, timeout time.Duration, state ...drmaa2interface.JobState) error {
-	return helper.WaitForState(dt.processTracker, jobid, timeout, state...)
+	return dt.processTracker.Wait(jobid, timeout, state...)
 }
 
 // ListJobCategories returns nothing.
@@ -76,8 +74,8 @@ func (dt *Tracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
 }
 
-// DeleteJob TODO as it is a TODO in simpletracker. Removes the job from the internal
-// DB when it is finsihed.
+// DeleteJob removes the job from the internal storage. It errors
+// when the job is not yet in any end state.
 func (dt *Tracker) DeleteJob(jobid string) error {
 	return dt.processTracker.DeleteJob(jobid)
 }

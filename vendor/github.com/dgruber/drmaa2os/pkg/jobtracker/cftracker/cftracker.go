@@ -144,50 +144,8 @@ func (dt *cftracker) JobControl(jobid, state string) error {
 	return errors.New("undefined state")
 }
 
-func isInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface.JobState) bool {
-	for _, expectedState := range states {
-		if state == expectedState {
-			return true
-		}
-	}
-	return false
-}
-
 func (dt *cftracker) Wait(jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
-	// same in Docker -> put in helper package
-	ticker := time.NewTicker(timeout)
-	defer ticker.Stop()
-
-	hasStateCh := make(chan bool, 1)
-	defer close(hasStateCh)
-
-	quit := make(chan bool)
-
-	go func() {
-		t := time.NewTicker(time.Millisecond * 200)
-		defer t.Stop()
-		for {
-			select {
-			case <-t.C:
-				currentState := dt.JobState(jobid)
-				if isInExpectedState(currentState, states...) {
-					hasStateCh <- true
-					return
-				}
-			case <-quit:
-				return
-			}
-		}
-	}()
-
-	select {
-	case <-ticker.C:
-		quit <- true
-		return errors.New("timeout while waiting for job state")
-	case <-hasStateCh:
-		return nil
-	}
-	return nil
+	return helper.WaitForState(dt, jobid, timeout, states...)
 }
 
 func (dt *cftracker) DeleteJob(jobid string) error {

@@ -2,13 +2,15 @@ package drmaa2os
 
 import (
 	"errors"
-	"fmt"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"time"
 )
 
+// JobSession instance acts as container for job instances controlled
+// through the DRMAA API. The session methods support the submission
+// of new jobs and the monitoring of existing jobs.
 type JobSession struct {
 	name    string
 	tracker []jobtracker.JobTracker
@@ -69,7 +71,7 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 					// TODO get template from DB
 					jobtemplate := drmaa2interface.JobTemplate{}
 
-					job := NewJob(jobid, js.name, jobtemplate, tracker)
+					job := newJob(jobid, js.name, jobtemplate, tracker)
 					joblist = append(joblist, drmaa2interface.Job(job))
 				}
 			}
@@ -89,21 +91,33 @@ func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
 		// TODO get template from DB
 		jobtemplate := drmaa2interface.JobTemplate{}
 
-		job := NewJob(id, js.name, jobtemplate, js.tracker[0])
+		job := newJob(id, js.name, jobtemplate, js.tracker[0])
 		joblist = append(joblist, drmaa2interface.Job(job))
 	}
 	return NewArrayJob(id, js.name, drmaa2interface.JobTemplate{}, joblist), nil
 }
 
+// RunJob method submits a job with the attributes defined in the given job template
+// instance. The method returns a Job object that represents the job in the underlying
+// DRM system. Depending on the job template settings, submission attempts may be
+// rejected with an InvalidArgumentException. The error details SHOULD provide further
+// information about the attribute(s) responsible for the rejection. When this method
+// returns a valid Job instance, the following conditions SHOULD be fulfilled:
+// - The job is part of the persistent state of the job session.
+// - All non-DRMAA and DRMAA interfaces to the DRM system report the job as
+//   being submitted to the DRM system.
+// - The job has one of the DRMAA job states.
 func (js *JobSession) RunJob(jt drmaa2interface.JobTemplate) (drmaa2interface.Job, error) {
 	id, err := js.tracker[0].AddJob(jt)
 	if err != nil {
 		return nil, err
 	}
-	return NewJob(id, js.name, jt, js.tracker[0]), nil
+	return newJob(id, js.name, jt, js.tracker[0]), nil
 }
 
-func (js *JobSession) RunBulkJobs(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (drmaa2interface.ArrayJob, error) {
+// RunBulkJobs method creates a set of parametric jobs, each with attributes as defined
+// in the given job template instance.
+func (js *JobSession) RunBulkJobs(jt drmaa2interface.JobTemplate, begin, end, step, maxParallel int) (drmaa2interface.ArrayJob, error) {
 	id, err := js.tracker[0].AddArrayJob(jt, begin, end, step, maxParallel)
 	if err != nil {
 		return nil, err
@@ -123,7 +137,6 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 		go func() {
 			select {
 			case <-abort:
-				fmt.Println("abort")
 				return
 			default:
 				var errWait error
@@ -156,7 +169,7 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 		case jobindex := <-started:
 			// abort all waiting go routines
 			for i := 1; i <= len(jobs)-errorCnt; i++ {
-				abort <- true // TODO multiple abort (len - errCnt)
+				abort <- true
 			}
 			return jobs[jobindex], nil
 		case <-timeoutCh:

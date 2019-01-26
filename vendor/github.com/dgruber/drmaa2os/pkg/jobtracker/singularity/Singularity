@@ -2,4 +2,4 @@ Bootstrap: docker
 From: golang:latest 
 
 %help
-Test container image bases on golang image.
+Test container image based on golang image.

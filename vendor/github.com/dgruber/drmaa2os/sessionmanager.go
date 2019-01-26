@@ -5,16 +5,10 @@ import (
 	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 	"github.com/dgruber/drmaa2os/pkg/storage"
-	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
-	"os"
 )
 
+// SessionType represents the selected resource manager.
 type SessionType int
 
 const (
@@ -25,12 +19,9 @@ const (
 	SingularitySession                     // Singularity containers
 )
 
-type cfContact struct {
-	addr     string
-	username string
-	password string
-}
-
+// SessionManager allows to create, list, and destroy job, reserveration,
+// and monitoring sessions. It also returns holds basic information about
+// the resource manager and its capabilities.
 type SessionManager struct {
 	store       storage.Storer
 	log         lager.Logger
@@ -38,40 +29,28 @@ type SessionManager struct {
 	cf          cfContact
 }
 
-func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, error) {
-	switch sm.sessionType {
-	case DefaultSession:
-		return simpletracker.New(name), nil
-	case DockerSession:
-		return dockertracker.New(name)
-	case CloudFoundrySession:
-		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
-	case KubernetesSession:
-		return kubernetestracker.New(name, nil)
-	case SingularitySession:
-		return singularity.New(name)
-	}
-	return nil, errors.New("unknown job session type")
-}
-
-func makeSessionManager(dbpath string, st SessionType) (*SessionManager, error) {
-	s := boltstore.NewBoltStore(dbpath)
-	if err := s.Init(); err != nil {
-		return nil, err
-	}
-	l := lager.NewLogger("sessionmanager")
-	l.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
-	return &SessionManager{store: s, log: l, sessionType: st}, nil
-}
-
+// NewDefaultSessionManager creates a SessionManager which starts jobs
+// as processes.
 func NewDefaultSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, DefaultSession)
 }
 
+// NewSingularitySessionManager creates a new session manager creating and
+// maintaining jobs as Singularity containers.
+func NewSingularitySessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, SingularitySession)
+}
+
+// NewDockerSessionManager creates a SessionManager which maintains jobs as
+// Docker containers.
 func NewDockerSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, DockerSession)
 }
 
+// NewCloudFoundrySessionManager creates a SessionManager which maintains jobs
+// as Cloud Foundry tasks.
+// addr needs to point to the cloud controller API and username and password
+// needs to be set as well.
 func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*SessionManager, error) {
 	sm, err := makeSessionManager(dbpath, CloudFoundrySession)
 	if err != nil {
@@ -91,36 +70,7 @@ func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, KubernetesSession)
 }
 
-// NewSingularitySessionManager creates a new session manager creating and
-// maintaining Singularity sessions.
-func NewSingularitySessionManager(dbpath string) (*SessionManager, error) {
-	return makeSessionManager(dbpath, SingularitySession)
-}
-
-func (sm *SessionManager) logErr(message string) error {
-	return errors.New(message)
-}
-
-func (sm *SessionManager) create(t storage.KeyType, name string, contact string) error {
-	if exists := sm.store.Exists(t, name); exists {
-		return sm.logErr("Session already exists")
-	}
-	if contact == "" {
-		contact = name
-	}
-	if err := sm.store.Put(t, name, contact); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (sm *SessionManager) delete(t storage.KeyType, name string) error {
-	if err := sm.store.Delete(t, name); err != nil {
-		return sm.logErr("Error while deleting")
-	}
-	return nil
-}
-
+// CreateJobSession creates a new JobSession for managing jobs.
 func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interface.JobSession, error) {
 	if err := sm.create(storage.JobSessionType, name, contact); err != nil {
 		return nil, err
@@ -133,24 +83,18 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	return js, nil
 }
 
+// CreateReservationSession creates a new ReservationSession.
 func (sm *SessionManager) CreateReservationSession(name, contact string) (drmaa2interface.ReservationSession, error) {
-	if err := sm.create(storage.ReservationSessionType, name, contact); err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return nil, ErrorUnsupportedOperation
 }
 
+// OpenMonitoringSession opens a session for monitoring jobs.
 func (sm *SessionManager) OpenMonitoringSession(sessionName string) (drmaa2interface.MonitoringSession, error) {
-	return nil, nil
+	return nil, errors.New("(TODO) not implemented")
 }
 
-func (sm *SessionManager) open(t storage.KeyType, name string) error {
-	if exists := sm.store.Exists(t, name); !exists {
-		return errors.New("Session does not exist")
-	}
-	return nil
-}
-
+// OpenJobSession creates a new session for managing jobs. The semantic of a job session
+// and the job session name depends on the resource manager.
 func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSession, error) {
 	if err := sm.open(storage.JobSessionType, name); err != nil {
 		return nil, err
@@ -166,41 +110,48 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 	return &js, nil
 }
 
+// OpenReservationSession opens a reservation session.
 func (sm *SessionManager) OpenReservationSession(name string) (drmaa2interface.ReservationSession, error) {
-	if err := sm.open(storage.ReservationSessionType, name); err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return nil, ErrorUnsupportedOperation
 }
 
+// DestroyJobSession destroys a job session by name.
 func (sm *SessionManager) DestroyJobSession(name string) error {
 	return sm.delete(storage.JobSessionType, name)
 }
 
+// DestroyReservationSession removes a reservation session.
 func (sm *SessionManager) DestroyReservationSession(name string) error {
 	return ErrorUnsupportedOperation
 }
 
+// GetJobSessionNames returns a list of all job sessions.
 func (sm *SessionManager) GetJobSessionNames() ([]string, error) {
 	return sm.store.List(storage.JobSessionType)
 }
 
+// GetReservationSessionNames returns a list of all reservation sessions.
 func (sm *SessionManager) GetReservationSessionNames() ([]string, error) {
-	return sm.store.List(storage.ReservationSessionType)
+	return nil, ErrorUnsupportedOperation
 }
 
+// GetDrmsName returns the name of the distributed resource manager.
 func (sm *SessionManager) GetDrmsName() (string, error) {
 	return "drmaa2os", nil
 }
 
+// GetDrmsVersion returns the version of the distributed resource manager.
 func (sm *SessionManager) GetDrmsVersion() (drmaa2interface.Version, error) {
 	return drmaa2interface.Version{Minor: "0", Major: "1"}, nil
 }
 
+// Supports returns true of false of the given Capability is supported by DRMAA2OS.
 func (sm *SessionManager) Supports(capability drmaa2interface.Capability) bool {
 	return false
 }
 
+// RegisterEventNotification creates an event channel which emits events when
+// the conditions described in the given notification specification are met.
 func (sm *SessionManager) RegisterEventNotification() (drmaa2interface.EventChannel, error) {
 	return nil, ErrorUnsupportedOperation
 }
