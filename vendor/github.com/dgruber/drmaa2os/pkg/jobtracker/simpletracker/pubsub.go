@@ -50,18 +50,10 @@ func NewPubSub() (*PubSub, chan JobEvent) {
 // in the expected state it returns nil as channel and nil as error.
 //
 // TODO add method for removing specific wait functions.
-// TODO add check if job is in a state which is not reachable
-// anymore
 func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (chan drmaa2interface.JobState, error) {
 	ps.Lock()
 	defer ps.Unlock()
 
-	// check if job already finished
-	if state, exists := ps.jobState[jobid]; exists {
-		if state == drmaa2interface.Failed || state == drmaa2interface.Done {
-			return nil, errors.New("job already finished")
-		}
-	}
 	// check if job is already in the expected state
 	state, exists := ps.jobState[jobid]
 	if exists {
@@ -69,6 +61,9 @@ func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (ch
 			if expectedState == state {
 				return nil, nil
 			}
+		}
+		if state == drmaa2interface.Failed || state == drmaa2interface.Done {
+			return nil, errors.New("job already finished")
 		}
 	}
 

@@ -1,5 +1,0 @@
-Bootstrap: docker
-From: golang:latest 
-
-%help
-Test container image based on golang image.

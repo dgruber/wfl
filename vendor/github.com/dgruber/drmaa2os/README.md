@@ -33,20 +33,30 @@ check out [drmaa2](https://github.com/dgruber/drmaa2).
 
 ## Basic Usage
 
-Following example demonstrates how a job running as OS process can be executed. More examples can be found in the _examples_ subdirectory. 
+Following example demonstrates how a job running as OS process can be executed. More examples can be found in the _examples_ subdirectory.
+
+Note that at this point in time only _JobSessions_ are implemented.
 
 ```go
-	sm, _ := drmaa2os.NewDefaultSessionManager("testdb.db")
+	sm, err := drmaa2os.NewDefaultSessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
 
-	js, _ := sm.CreateJobSession("jobsession", "")
+	js, err := sm.CreateJobSession("jobsession", "")
+	if err != nil {
+		panic(err)
+	}
 
 	jt := drmaa2interface.JobTemplate{
-		JobName:       "job1",
 		RemoteCommand: "sleep",
 		Args:          []string{"2"},
 	}
 
-	job, _ := js.RunJob(jt)
+	job, err := js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
 
 	job.WaitTerminated(drmaa2interface.InfiniteTime)
 
@@ -63,14 +73,145 @@ Following example demonstrates how a job running as OS process can be executed. 
 
 ## Using other Backends
 
+Using other backends for workload management and execution only differs in creating
+a different _SessionManager_. Different _JobTemplate_ attributes might be neccessary when
+switching the implementation. If using a backend which supports container images it
+might be required to set the _JobCategory_ to the container image name.
+
 ### Docker
+
+If Docker is installed locally it will automatically detect it. For pointing to
+a different host environment variables needs to be set before the _SessionManager_
+is created.
+
+"Use DOCKER_HOST to set the url to the docker server.
+ Use DOCKER_API_VERSION to set the version of the API to reach, leave empty for latest.
+ Use DOCKER_CERT_PATH to load the TLS certificates from.
+ Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
+
+```go
+	sm, err := drmaa2os.NewDockerSessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := sm.CreateJobSession("jobsession", "")
+	if err != nil {
+		panic(err)
+	}
+
+	jt := drmaa2interface.JobTemplate{
+		RemoteCommand: "sleep",
+		Args:          []string{"2"},
+		JobCategory:   "busybox",
+	}
+	job, err := js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
+
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
+
+	js.Close()
+	sm.DestroyJobSession("jobsession")
+```
 
 ### Kubernetes
 
+```go
+	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := sm.CreateJobSession("jobsession", "")
+	if err != nil {
+		panic(err)
+	}
+
+	jt := drmaa2interface.JobTemplate{
+		RemoteCommand: "sleep",
+		Args:          []string{"2"},
+		JobCategory:   "busybox",
+	}
+	job, err := js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
+
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
+
+	js.Close()
+	sm.DestroyJobSession("jobsession")
+```
+
 ### Cloud Foundry
+
+The Cloud Foundry _SessionManager_ requires details for connecting to the
+Cloud Foundry cloud controller API when being created. The _JobCategory_ needs to
+be set to the application GUID which is the source of the container image
+of the task.
+
+```go
+	sm, err := drmaa2os.NewCloudFoundrySessionManager("api.run.pivotal.io", "user", "password", "test.db")
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := sm.CreateJobSession("jobsession", "")
+	if err != nil {
+		panic(err)
+	}
+
+	jt := drmaa2interface.JobTemplate{
+		RemoteCommand: "dbbackup.sh",
+		Args:          []string{"location"},
+		JobCategory:   "123CFAPPGUID",
+	}
+	job, err := js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
+
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
+
+	js.Close()
+	sm.DestroyJobSession("jobsession")
+```
 
 ### Singularity
 
+The Singularity _SessionManager_ wraps the singularity command which is required to be installed.
+The container images can be provided in any form (like pointing to file or shub) but are 
+required to be set as _JobCategory_ for each job.
+
+```go
+	sm, err := drmaa2os.NewSingularitySessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := sm.CreateJobSession("jobsession", "")
+	if err != nil {
+		panic(err)
+	}
+
+	jt := drmaa2interface.JobTemplate{
+		RemoteCommand: "sleep",
+		Args:          []string{"2"},
+		JobCategory:   "shub://GodloveD/lolcow",
+	}
+
+	job, err := js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
+
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
+
+	js.Close()
+	sm.DestroyJobSession("jobsession")
+```
 
 
 

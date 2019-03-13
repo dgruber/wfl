@@ -9,6 +9,7 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
 	"os"
@@ -22,8 +23,6 @@ type cfContact struct {
 
 func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, error) {
 	switch sm.sessionType {
-	case DefaultSession:
-		return simpletracker.New(name), nil
 	case DockerSession:
 		return dockertracker.New(name)
 	case CloudFoundrySession:
@@ -32,8 +31,12 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 		return kubernetestracker.New(name, nil)
 	case SingularitySession:
 		return singularity.New(name)
+	case SlurmSession:
+		return slurmcli.New(name, slurmcli.NewSlurm("sbatch",
+			"squeue", "scontrol", "scancel", "sacct", true))
+	default: // DefaultSession
+		return simpletracker.New(name), nil
 	}
-	return nil, errors.New("unknown job session type")
 }
 
 func makeSessionManager(dbpath string, st SessionType) (*SessionManager, error) {
@@ -66,13 +69,6 @@ func (sm *SessionManager) create(t storage.KeyType, name string, contact string)
 func (sm *SessionManager) delete(t storage.KeyType, name string) error {
 	if err := sm.store.Delete(t, name); err != nil {
 		return sm.logErr("Error while deleting")
-	}
-	return nil
-}
-
-func (sm *SessionManager) open(t storage.KeyType, name string) error {
-	if exists := sm.store.Exists(t, name); !exists {
-		return errors.New("Session does not exist")
 	}
 	return nil
 }

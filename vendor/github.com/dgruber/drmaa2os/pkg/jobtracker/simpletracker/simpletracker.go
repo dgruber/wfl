@@ -288,21 +288,6 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 		return errors.New("job does not exist")
 	}
 
-	jt.ps.Lock()
-	if js, jsexists := jt.ps.jobState[jobid]; jsexists {
-		if js == drmaa2interface.Failed || js == drmaa2interface.Done {
-			jt.ps.Unlock()
-			jt.Unlock()
-			for i := range state {
-				if state[i] == js {
-					return nil
-				}
-			}
-			return errors.New("Invalid state")
-		}
-	}
-	jt.ps.Unlock()
-
 	// register channel to get informed when job finished or reached the state
 	waitChannel, err := jt.ps.Register(jobid, state...)
 	jt.Unlock()

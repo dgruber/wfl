@@ -1,7 +1,6 @@
 package drmaa2os
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
 )
@@ -17,7 +16,7 @@ const (
 )
 
 func jobAction(a action, jobs []drmaa2interface.Job) error {
-	var globalError string
+	var globalError error
 	for i := range jobs {
 		var err error
 		switch a {
@@ -33,11 +32,23 @@ func jobAction(a action, jobs []drmaa2interface.Job) error {
 			err = jobs[i].Terminate()
 		}
 		if err != nil {
-			globalError = fmt.Sprintf("Job %s error: %s %s", jobs[i].GetID(), err, globalError)
+			if globalError != nil {
+				globalError = fmt.Errorf("Job %s error: %s | %s",
+					jobs[i].GetID(), err, globalError.Error())
+			} else {
+				globalError = fmt.Errorf("Job %s error: %s",
+					jobs[i].GetID(), err)
+			}
 		}
 	}
-	if globalError == "" {
-		return nil
+	return globalError
+}
+
+func newArrayJob(id, jsessionname string, tmpl drmaa2interface.JobTemplate, jobs []drmaa2interface.Job) *ArrayJob {
+	return &ArrayJob{
+		id:          id,
+		sessionname: jsessionname,
+		template:    tmpl,
+		jobs:        jobs,
 	}
-	return errors.New(globalError)
 }

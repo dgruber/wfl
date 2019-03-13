@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 )
 
@@ -12,11 +13,18 @@ import (
 type SessionType int
 
 const (
-	DefaultSession      SessionType = iota // processes
-	DockerSession                          // containers
-	CloudFoundrySession                    // application tasks
-	KubernetesSession                      // pods
-	SingularitySession                     // Singularity containers
+	// DefaultSession handles jobs as processes
+	DefaultSession SessionType = iota
+	// DockerSession manages Docker containers
+	DockerSession
+	// CloudFoundrySession manages Cloud Foundry application tasks
+	CloudFoundrySession
+	// KubernetesSession creates Kubernetes jobs
+	KubernetesSession
+	// SingularitySession manages Singularity containers
+	SingularitySession
+	// SlurmSession manages slurm jobs
+	SlurmSession
 )
 
 // SessionManager allows to create, list, and destroy job, reserveration,
@@ -27,6 +35,7 @@ type SessionManager struct {
 	log         lager.Logger
 	sessionType SessionType
 	cf          cfContact
+	slurm       *slurmcli.Slurm
 }
 
 // NewDefaultSessionManager creates a SessionManager which starts jobs
@@ -70,6 +79,12 @@ func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, KubernetesSession)
 }
 
+// NewSlurmSessionManager creates a new session manager which wraps the
+// slurm command line for managing jobs.
+func NewSlurmSessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, SlurmSession)
+}
+
 // CreateJobSession creates a new JobSession for managing jobs.
 func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interface.JobSession, error) {
 	if err := sm.create(storage.JobSessionType, name, contact); err != nil {
@@ -79,7 +94,7 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	if err != nil {
 		return nil, err
 	}
-	js := NewJobSession(name, []jobtracker.JobTracker{jt})
+	js := newJobSession(name, []jobtracker.JobTracker{jt})
 	return js, nil
 }
 
@@ -96,8 +111,8 @@ func (sm *SessionManager) OpenMonitoringSession(sessionName string) (drmaa2inter
 // OpenJobSession creates a new session for managing jobs. The semantic of a job session
 // and the job session name depends on the resource manager.
 func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSession, error) {
-	if err := sm.open(storage.JobSessionType, name); err != nil {
-		return nil, err
+	if exists := sm.store.Exists(storage.JobSessionType, name); !exists {
+		return nil, errors.New("JobSession does not exist")
 	}
 	jt, err := sm.newJobTracker(name)
 	if err != nil {

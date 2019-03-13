@@ -29,6 +29,7 @@ ignored = ["github.com/dgruber/drmaa2interface"]
 [[constraint]]
   branch = "master"
   name = "github.com/dgruber/drmaa2os"
+  version = "0.2.3"
 
 [[constraint]]
   branch = "master"

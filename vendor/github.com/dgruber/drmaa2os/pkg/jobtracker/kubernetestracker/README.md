@@ -1,13 +1,15 @@
 # Kubernetes Tracker
 
 Implements the JobTracker interface for kubernetes batch jobs.
+It is a building block for implementing the DRMAA2 interface
+for kubernetes.
 
 ## Introduction
 
 The kubernetes tracker provides methods for managing sets of 
-grouped batch jobs (JobSessions). JobSessions are implemented
-by using labels attached to batch job objects ("drmaa2jobsession")
-refering to the JobSession name.
+grouped batch jobs (withing _JobSessions_). _JobSessions_ are
+implemented by using labels attached to batch job objects 
+("drmaa2jobsession") refering to the _JobSession_ name.
 
 ## Functionality
 
@@ -52,6 +54,7 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | WorkingDir           | v1.Container.WorkingDir         |
 | JobName              | Note: If set and a job with the same name exists in history submission will fail. metadata: Name |
 | DeadlineTime         | AbsoluteTime converted to relative time (v1.Container.ActiveDeadlineSeconds) |
+| JobEnvironment       | v1.EnvVar                       |
 
 Job Template extensions:
 
@@ -59,6 +62,7 @@ Job Template extensions:
 |:--------------|----------------------------------:|
 | namespace     | v1.Namespace                      |
 | labels        | "key=value,key2=value2" v1.Labels |
+| scheduler     | poseidon, kube-batch or any other k8s scheduler |
  
 
 Required:

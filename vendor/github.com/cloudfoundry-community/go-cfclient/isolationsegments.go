@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,19 +36,6 @@ type IsolationSegementResponse struct {
 			Href string `json:"href"`
 		} `json:"organizations"`
 	} `json:"links"`
-}
-
-type Pagination struct {
-	TotalResults int `json:"total_results"`
-	TotalPages   int `json:"total_pages"`
-	First        struct {
-		Href string `json:"href"`
-	} `json:"first"`
-	Last struct {
-		Href string `json:"href"`
-	} `json:"last"`
-	Next     string `json:"next"`
-	Previous string `json:"previous"`
 }
 
 type ListIsolationSegmentsResponse struct {
@@ -110,9 +98,9 @@ func (c *Client) GetIsolationSegmentByGUID(guid string) (*IsolationSegment, erro
 	return &IsolationSegment{Name: isr.Name, GUID: isr.GUID, CreatedAt: isr.CreatedAt, UpdatedAt: isr.UpdatedAt, c: c}, nil
 }
 
-func (c *Client) ListIsolationSegments() ([]IsolationSegment, error) {
+func (c *Client) ListIsolationSegmentsByQuery(query url.Values) ([]IsolationSegment, error) {
 	var iss []IsolationSegment
-	requestUrl := "/v3/isolation_segments"
+	requestUrl := "/v3/isolation_segments?" + query.Encode()
 	for {
 		var isr ListIsolationSegmentsResponse
 		r := c.NewRequest("GET", requestUrl)
@@ -141,12 +129,17 @@ func (c *Client) ListIsolationSegments() ([]IsolationSegment, error) {
 			})
 		}
 
-		requestUrl = isr.Pagination.Next
-		if requestUrl == "" {
+		var ok bool
+		requestUrl, ok = isr.Pagination.Next.(string)
+		if !ok || requestUrl == "" {
 			break
 		}
 	}
 	return iss, nil
+}
+
+func (c *Client) ListIsolationSegments() ([]IsolationSegment, error) {
+	return c.ListIsolationSegmentsByQuery(nil)
 }
 
 // TODO listOrgsForIsolationSegments
@@ -168,6 +161,26 @@ func (i *IsolationSegment) Delete() error {
 	return i.c.DeleteIsolationSegmentByGUID(i.GUID)
 }
 
+func (c *Client) AddIsolationSegmentToOrg(isolationSegmentGUID, orgGUID string) error {
+	isoSegment := IsolationSegment{GUID: isolationSegmentGUID, c: c}
+	return isoSegment.AddOrg(orgGUID)
+}
+
+func (c *Client) RemoveIsolationSegmentFromOrg(isolationSegmentGUID, orgGUID string) error {
+	isoSegment := IsolationSegment{GUID: isolationSegmentGUID, c: c}
+	return isoSegment.RemoveOrg(orgGUID)
+}
+
+func (c *Client) AddIsolationSegmentToSpace(isolationSegmentGUID, spaceGUID string) error {
+	isoSegment := IsolationSegment{GUID: isolationSegmentGUID, c: c}
+	return isoSegment.AddSpace(spaceGUID)
+}
+
+func (c *Client) RemoveIsolationSegmentFromSpace(isolationSegmentGUID, spaceGUID string) error {
+	isoSegment := IsolationSegment{GUID: isolationSegmentGUID, c: c}
+	return isoSegment.RemoveSpace(spaceGUID)
+}
+
 func (i *IsolationSegment) AddOrg(orgGuid string) error {
 	if i == nil || i.c == nil {
 		return errors.New("No communication handle.")
@@ -183,7 +196,7 @@ func (i *IsolationSegment) AddOrg(orgGuid string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error during adding org to isolation segment")
 	}
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Error adding org %s to isolation segment %s, response code: %d", orgGuid, i.Name, resp.StatusCode)
 	}
 	return nil
@@ -193,10 +206,7 @@ func (i *IsolationSegment) RemoveOrg(orgGuid string) error {
 	if i == nil || i.c == nil {
 		return errors.New("No communication handle.")
 	}
-	req := i.c.NewRequest("DELETE", fmt.Sprintf("/v3/isolation_segments/%s/relationships/organizations", i.GUID))
-	req.obj = map[string]interface{}{
-		"guid": orgGuid,
-	}
+	req := i.c.NewRequest("DELETE", fmt.Sprintf("/v3/isolation_segments/%s/relationships/organizations/%s", i.GUID, orgGuid))
 	resp, err := i.c.DoRequest(req)
 	if err != nil {
 		return errors.Wrapf(err, "Error during removing org %s in isolation segment %s", orgGuid, i.Name)

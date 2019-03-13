@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// ArrayJobID2GUIDs converts the array job ID returned from
+// the AddArrayJobAsSingleJobs.
 func ArrayJobID2GUIDs(id string) ([]string, error) {
 	var guids []string
 	err := json.Unmarshal([]byte(id), &guids)
@@ -17,6 +19,8 @@ func ArrayJobID2GUIDs(id string) ([]string, error) {
 	return guids, nil
 }
 
+// Guids2ArrayJobID creates an array job ID out of the
+// given single job IDs.
 func Guids2ArrayJobID(guids []string) string {
 	id, err := json.Marshal(guids)
 	if err != nil {
@@ -25,6 +29,11 @@ func Guids2ArrayJobID(guids []string) string {
 	return string(id)
 }
 
+// AddArrayJobAsSingleJobs takes an job array definition and submits single
+// jobs through the AddJob() method of the given job tracker. This function
+// is typically needed when a DRM does not support job arrays natively.
+// The returned array job ID is created from all of the returned job IDs and
+// does not work with the DRM directly.
 func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTracker, begin int, end int, step int) (string, error) {
 	var guids []string
 	for i := begin; i <= end; i += step {
@@ -37,6 +46,7 @@ func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTra
 	return Guids2ArrayJobID(guids), nil
 }
 
+// IsInExpectedState checks if state is in one of the given states.
 func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface.JobState) bool {
 	for _, expectedState := range states {
 		if state == expectedState {
@@ -46,6 +56,7 @@ func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface
 	return false
 }
 
+// WaitForState blocks until job is in any of the given states or a timeout happens.
 func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
 	if IsInExpectedState(jt.JobState(jobid), states...) {
 		return nil

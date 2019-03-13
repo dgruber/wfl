@@ -37,6 +37,8 @@ func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
 }
 
+// ListJobs returns a list of job IDs associated with the current
+// DRMAA2 job session.
 func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
@@ -49,7 +51,7 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 	}
 	ids := make([]string, 0, len(jobsList.Items))
 	for _, job := range jobsList.Items {
-		ids = append(ids, string(job.UID))
+		ids = append(ids, string(job.Name))
 	}
 	return ids, nil
 }
@@ -69,7 +71,7 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 	if err != nil {
 		return "", fmt.Errorf("creating new job: %s", err.Error())
 	}
-	return string(j.UID), nil
+	return string(j.Name), nil
 }
 
 func (kt *KubernetesTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {

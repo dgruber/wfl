@@ -21,7 +21,6 @@ func JobInfoMatches(ji drmaa2interface.JobInfo, filter drmaa2interface.JobInfo) 
 			return false
 		}
 	}
-
 	if filter.Annotation != "" {
 		if ji.Annotation != filter.Annotation {
 			return false

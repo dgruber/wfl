@@ -45,6 +45,8 @@ func exitStatusFromJobState(status drmaa2interface.JobState) int {
 	return 0
 }
 
+// JobToJobInfo converts a kubernetes job to a DRMAA2 JobInfo
+// representation.
 func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInfo, error) {
 	ji := drmaa2interface.JobInfo{}
 	job, err := getJobByID(jc, jobid)

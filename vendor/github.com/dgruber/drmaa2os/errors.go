@@ -13,4 +13,5 @@ var (
 	ErrorJobNotExists         = DRMAA2Error{"The job does not exist."}
 	ErrorInvalidState         = DRMAA2Error{"Invalid state."}
 	ErrorInternal             = DRMAA2Error{"Internal error occurred."}
+	ErrorInvalidSession       = DRMAA2Error{"The session used for the method call is not valid."}
 )

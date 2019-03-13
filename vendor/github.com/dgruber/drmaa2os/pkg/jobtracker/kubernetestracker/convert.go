@@ -3,12 +3,13 @@ package kubernetestracker
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"time"
 )
 
 func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
@@ -31,9 +32,13 @@ func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 		WorkingDir: jt.WorkingDirectory,
 	}
 
+	for name, value := range jt.JobEnvironment {
+		c.Env = append(c.Env, k8sv1.EnvVar{Name: name, Value: value})
+	}
+
 	// spec.template.spec.containers[0].name: Required value"
 	if jt.JobName == "" {
-		c.Name = "drmaa2osstandardcontainer"
+		c.Name = "drmaa2os"
 	}
 
 	// if len(jt.CandidateMachines) == 1 {
@@ -75,7 +80,7 @@ func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string, act
 		Volumes:       v,
 		Containers:    c,
 		NodeSelector:  ns,
-		RestartPolicy: "Never",
+		RestartPolicy: k8sv1.RestartPolicyNever,
 	}
 	if *activeDeadline > 0 {
 		spec.ActiveDeadlineSeconds = activeDeadline
@@ -87,14 +92,14 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	if jt.ExtensionList == nil {
 		return job
 	}
-	if jt.ExtensionList["namespace"] != "" {
+	if namespace, set := jt.ExtensionList["namespace"]; set && namespace != "" {
 		//Namespace: v1.NamespaceDefault
-		job.Namespace = jt.ExtensionList["namespace"]
+		job.Namespace = namespace
 	}
-	if jt.ExtensionList["labels"] != "" {
+	if labels, set := jt.ExtensionList["labels"]; set && labels != "" {
 		// "key=value,key=value,..."
-		for _, labels := range strings.Split(jt.ExtensionList["labels"], ",") {
-			l := strings.Split(labels, "=")
+		for _, label := range strings.Split(labels, ",") {
+			l := strings.Split(label, "=")
 			if len(l) == 2 {
 				if l[0] == "drmaa2jobsession" {
 					continue // don't allow to override job session
@@ -103,6 +108,10 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 			}
 		}
 	}
+	if scheduler, set := jt.ExtensionList["scheduler"]; set && scheduler != "" {
+		job.Spec.Template.Spec.SchedulerName = scheduler
+	}
+
 	return job
 }
 

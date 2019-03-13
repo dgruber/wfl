@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"k8s.io/client-go/kubernetes"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // support for GCP / GKE
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
@@ -18,6 +19,7 @@ func NewClientSet() (*kubernetes.Clientset, error) {
 		return nil, fmt.Errorf("opening .kube/config file: %s", err.Error())
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+
 	if err != nil {
 		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
 	}
