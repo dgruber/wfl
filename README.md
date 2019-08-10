@@ -24,6 +24,20 @@ In its simplest form a process can be started and waited for:
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("convert", "image.jpg", "image.png").Wait()
 ```
 
+If the output of the command needs to be displayed on the terminal you can set the out path in the
+default _JobTemplate_ (see below) configuration:
+
+```go
+	template := drmaa2interface.JobTemplate{
+		ErrorPath:  "/dev/stderr",
+		OutputPath: "/dev/stdout",
+	}
+	flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(wfl.ProcessConfig{
+		DefaultTemplate: template,
+	}))
+	flow.Run("echo", "hello").Wait()
+```
+
 Running a job as a Docker container requires a different context (and the image
 already pulled before).
 
