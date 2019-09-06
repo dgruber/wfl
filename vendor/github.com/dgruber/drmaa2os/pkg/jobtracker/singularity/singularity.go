@@ -11,18 +11,19 @@ import (
 
 // Tracker tracks singularity container.
 type Tracker struct {
-	processTracker *simpletracker.JobTracker
+	processTracker  *simpletracker.JobTracker
+	singularityPath string
 }
 
 // New creates a new Tracker for Singularity containers.
 func New(jobsession string) (*Tracker, error) {
-	cmd := exec.Command("singularity")
-	err := cmd.Run()
-	if err != nil || !cmd.ProcessState.Success() {
+	singularityPath, err := exec.LookPath("singularity")
+	if err != nil {
 		return nil, fmt.Errorf("singularity command is not found")
 	}
 	return &Tracker{
-		processTracker: simpletracker.New(jobsession),
+		processTracker:  simpletracker.New(jobsession),
+		singularityPath: singularityPath,
 	}, nil
 }
 

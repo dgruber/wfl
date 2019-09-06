@@ -236,6 +236,8 @@ func (j *Job) Kill() *Job {
 }
 
 // LastError returns the error if occurred during last job operation.
+// Don't use LastError() to find the reason why a job was failing!
+// Check exit code / stderr output etc.
 func (j *Job) LastError() error {
 	return j.lastError
 }
@@ -428,7 +430,10 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 }
 
 // Failed returns true in case the current task stated equals drmaa2interface.Failed
+// It turns out that Failed() leads to a wrong usage of the library.
+// Better use Errored() then !Success().
 func (j *Job) Failed() bool {
+	fmt.Printf("Failed is deprecated and gets removed. Use !Success() instead.")
 	return j.State() == drmaa2interface.Failed
 }
 

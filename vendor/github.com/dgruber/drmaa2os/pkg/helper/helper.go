@@ -56,8 +56,11 @@ func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface
 	return false
 }
 
-// WaitForState blocks until job is in any of the given states or a timeout happens.
-func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
+// WaitForStateWithInterval blocks until the job is any of the given
+// states or a timeout happens. The time interval for job state check
+// calls is given as parameter.
+func WaitForStateWithInterval(jt jobtracker.JobTracker, interval time.Duration, jobid string,
+	timeout time.Duration, states ...drmaa2interface.JobState) error {
 	if IsInExpectedState(jt.JobState(jobid), states...) {
 		return nil
 	}
@@ -69,7 +72,7 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 	defer close(hasStateCh)
 
 	go func() {
-		t := time.NewTicker(time.Millisecond * 100)
+		t := time.NewTicker(interval)
 		defer t.Stop()
 
 		timeoutTicker := time.NewTicker(timeout)
@@ -94,4 +97,10 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 		return errors.New("timeout while waiting for job state")
 	}
 	return nil
+}
+
+// WaitForState blocks until job is in any of the given states or a timeout
+// happens. It checks the job state every 100 ms.
+func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
+	return WaitForStateWithInterval(jt, 100*time.Millisecond, jobid, timeout, states...)
 }
