@@ -16,7 +16,7 @@ func main() {
 	now := time.Now()
 	filePipeExample()
 
-	fmt.Println("file based pipe took %s\n", time.Now().Sub(now).String())
+	fmt.Printf("file based pipe took %s\n", time.Now().Sub(now).String())
 
 }
 
