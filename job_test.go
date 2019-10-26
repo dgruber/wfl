@@ -101,7 +101,7 @@ var _ = Describe("Job", func() {
 
 			job = job.Run("sleep", "0").Retry(5)
 			Ω(job).ShouldNot(BeNil())
-			Ω(job.Failed()).Should(BeFalse())
+			Ω(job.Success()).Should(BeTrue())
 
 			job = job.Run("date", "invalidFormat").Retry(5)
 			Ω(job).ShouldNot(BeNil())
@@ -312,13 +312,13 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should show that the job is failed", func() {
-			failed := wf.Run("date", "unknownformat").Wait().Failed()
-			Ω(failed).Should(BeTrue())
+			success := wf.Run("date", "unknownformat").Wait().Success()
+			Ω(success).Should(BeFalse())
 		})
 
 		It("should show that the job is not failed", func() {
-			failed := wf.Run("sleep", "0").Wait().Failed()
-			Ω(failed).Should(BeFalse())
+			success := wf.Run("sleep", "0").Wait().Success()
+			Ω(success).Should(BeTrue())
 		})
 
 		It("should return the job ID of the previously submitted job", func() {

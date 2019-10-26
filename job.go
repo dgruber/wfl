@@ -350,6 +350,7 @@ func (j *Job) Wait() *Job {
 	j.infof(j.ctx, "Wait()")
 	j.lastError = nil
 	if task := j.lastJob(); task != nil {
+		j.infof(j.ctx, fmt.Sprintf("Wait() for %s", task.job.GetID()))
 		wait(task)
 	} else {
 		j.errorf(
@@ -427,14 +428,6 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 		}
 	}
 	return j
-}
-
-// Failed returns true in case the current task stated equals drmaa2interface.Failed
-// It turns out that Failed() leads to a wrong usage of the library.
-// Better use Errored() then !Success().
-func (j *Job) Failed() bool {
-	fmt.Printf("Failed is deprecated and gets removed. Use !Success() instead.")
-	return j.State() == drmaa2interface.Failed
 }
 
 // Success returns true in case the current task stated equals drmaa2interface.Done

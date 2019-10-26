@@ -10,7 +10,7 @@ import (
 var panicF = func(e error) { panic(e) }
 
 func main() {
-	// cf login details needs to be set before in the environment (or create the contex ByCfg())
+	// cf login details needs to be set before in the environment (or create the context ByCfg())
 	// CF_API / CF_USER / CF_PASSWORD
 
 	// GUID of app of which the droplet is used as image for the task

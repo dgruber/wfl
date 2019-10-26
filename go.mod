@@ -8,9 +8,7 @@ replace (
 
 require (
 	github.com/dgruber/drmaa2interface v1.0.0
-	github.com/dgruber/drmaa2os v0.2.4
-	github.com/google/btree v1.0.0 // indirect
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
+	github.com/dgruber/drmaa2os v0.2.5
 	github.com/mitchellh/copystructure v0.0.0-20170525013902-d23ffcb85de3
 	github.com/mitchellh/reflectwalk v0.0.0-20170726202117-63d60e9d0dbc // indirect
 	github.com/onsi/ginkgo v1.8.0

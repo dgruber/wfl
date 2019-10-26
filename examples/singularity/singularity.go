@@ -47,7 +47,7 @@ func ImageBuilder(image, recipe string) error {
 		panic(e)
 	}).Wait()
 
-	if job.Failed() {
+	if !job.Success() {
 		return errors.New("building image failed")
 	}
 	return nil
