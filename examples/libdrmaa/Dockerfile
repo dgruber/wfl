@@ -11,11 +11,9 @@ ENV GOPATH /go
 ENV PATH /usr/local/go/bin:${PATH}:${GOPATH}/bin
 ENV PATH ${PATH}:/opt/sge/include
 
-RUN go get github.com/dgruber/drmaa2interface
-RUN go get github.com/dgruber/wfl
-
-RUN mkdir -p /go/src/github.com/dgruber/drmaa2os/examples/libdrmaa
-COPY . /go/src/github.com/dgruber/drmaa2os/examples/libdrmaa
+#RUN go get github.com/dgruber/drmaa2interface
+#RUN go get github.com/dgruber/drmaa2os
+#RUN go get github.com/dgruber/wfl
 
 ADD entrypoint.sh /entrypoint.sh
 

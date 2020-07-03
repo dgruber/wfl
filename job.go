@@ -13,14 +13,15 @@ import (
 )
 
 type task struct {
-	job              drmaa2interface.Job
-	template         drmaa2interface.JobTemplate
-	jobinfo          drmaa2interface.JobInfo
-	terminated       bool
-	submitError      error
-	terminationError error
-	jobinfoError     error
-	retry            int
+	job                             drmaa2interface.Job
+	template                        drmaa2interface.JobTemplate
+	jobinfo                         drmaa2interface.JobInfo
+	terminated                      bool
+	submitError                     error
+	terminationError                error
+	jobinfoError                    error
+	retry                           int
+	waitForEndStateCollectedJobInfo bool
 }
 
 // Job defines methods for job life-cycle management. A job is
@@ -86,6 +87,11 @@ func (j *Job) Template() *drmaa2interface.JobTemplate {
 // State returns the current state of the job previously submitted.
 func (j *Job) State() drmaa2interface.JobState {
 	j.begin(j.ctx, "State()")
+	task := j.lastJob()
+	// drmaa1 dictates caching
+	if task != nil && task.waitForEndStateCollectedJobInfo && task.jobinfoError == nil {
+		return task.jobinfo.State
+	}
 	job, err := j.jobCheck()
 	if err != nil {
 		j.lastError = err
@@ -115,6 +121,14 @@ func (j *Job) JobInfo() drmaa2interface.JobInfo {
 		j.lastError = err
 		return drmaa2interface.JobInfo{}
 	}
+	// check if a previous wait() call has the JobInfo already - drmaa1
+	// allows only one call before the info is reaped
+	task := j.lastJob()
+	if task != nil && task.waitForEndStateCollectedJobInfo &&
+		task.jobinfoError == nil {
+		return task.jobinfo
+	}
+
 	ji, errJI := job.GetJobInfo()
 	if errJI != nil {
 		j.errorf(j.ctx, "JobInfo() [JobID: %s]: GetJobInfo() failed with: %s",
@@ -163,11 +177,11 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 		return j
 	}
 	// merging only specific job template parameters
-	jt = mergeJobTemplateWithDefaultTemplate(jt, j.wfl.ctx.defaultTemplate)
+	jt = mergeJobTemplateWithDefaultTemplate(jt, j.wfl.ctx.DefaultTemplate)
 
 	// JobCategory overrides all at the moment...
 	if jt.JobCategory == "" {
-		jt.JobCategory = j.wfl.ctx.defaultDockerImage
+		jt.JobCategory = j.wfl.ctx.DefaultDockerImage
 	}
 	if j.wfl.js == nil {
 		j.lastError = errors.New("JobSession is nil")
@@ -340,9 +354,14 @@ func wait(task *task) {
 	if task.job == nil {
 		return
 	}
+	if task.terminated == true {
+		return
+	}
 	task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
 	task.terminated = true
+	// cache the jobinfo
 	task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
+	task.waitForEndStateCollectedJobInfo = true
 }
 
 // Wait until the most recently task was finished.
@@ -351,6 +370,10 @@ func (j *Job) Wait() *Job {
 	j.lastError = nil
 	if task := j.lastJob(); task != nil {
 		j.infof(j.ctx, fmt.Sprintf("Wait() for %s", task.job.GetID()))
+		// check if we waited already (drmaa1 allows only one call)
+		if task.waitForEndStateCollectedJobInfo {
+			return j
+		}
 		wait(task)
 	} else {
 		j.errorf(

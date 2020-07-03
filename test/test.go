@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
-	"os"
+	"github.com/dgruber/wfl/pkg/context/docker"
 )
 
 // Compiles all test applications
@@ -71,7 +73,7 @@ func createDockerBuild(image string) (map[string]string, drmaa2interface.JobTemp
 			goPath + "/src/github.com/dgruber/wfl":             "/go/src/github.com/dgruber/wfl"},
 	}
 
-	ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: image})
+	ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: image})
 	if ctx.HasError() {
 		fmt.Printf("Docker context not supported: %s\n", ctx.Error())
 		testApps = nil

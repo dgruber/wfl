@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
-	"os"
+	"github.com/dgruber/wfl/pkg/context/docker"
 )
 
 func main() {
@@ -53,7 +55,7 @@ func newBuilderTemplate(job, owner string) drmaa2interface.JobTemplate {
 }
 
 func runDockerWorkflow() {
-	wf := wfl.NewWorkflow(wfl.NewDockerContext())
+	wf := wfl.NewWorkflow(docker.NewDockerContext())
 	wf.RunT(drmaa2interface.JobTemplate{
 		JobCategory:   "dgruber/job1:1.0.0",
 		OutputPath:    "/dev/stdout",

@@ -31,7 +31,7 @@ func NewLibDRMAAContextByCfg(cfg Config) *wfl.Context {
 	}
 	sm, err := drmaa2os.NewLibDRMAASessionManager(cfg.DBFile)
 	return &wfl.Context{
-		sm:              sm,
-		defaultTemplate: cfg.DefaultTemplate,
-		ctxCreationErr:  err}
+		SM:              sm,
+		DefaultTemplate: cfg.DefaultTemplate,
+		CtxCreationErr:  err}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
+	"github.com/dgruber/wfl/pkg/context/docker"
 )
 
 // template specifies all default settings for jobs for the worklflow.
@@ -16,7 +17,7 @@ var template = drmaa2interface.JobTemplate{
 }
 
 func main() {
-	flow := wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{
+	flow := wfl.NewWorkflow(docker.NewDockerContextByCfg(docker.Config{
 		DefaultTemplate: template,
 	}))
 

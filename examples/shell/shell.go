@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
+	"github.com/dgruber/wfl/pkg/context/docker"
 )
 
 func Sh(command string) drmaa2interface.JobTemplate {
@@ -18,6 +19,6 @@ func main() {
 	job := wfl.NewJob(wfl.NewWorkflow(wfl.NewProcessContext()))
 	job.RunT(Sh(`echo hello process`)).Wait()
 
-	job = wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})))
+	job = wfl.NewJob(wfl.NewWorkflow(docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})))
 	job.RunT(Sh(`echo hello Docker`)).Wait()
 }

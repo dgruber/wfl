@@ -11,20 +11,7 @@ import (
 func epanic(e error) { panic(e) }
 
 func start(j drmaa2interface.Job) {
-	fmt.Printf("Started job with ID: %s\n", j.GetID())
-}
-
-func success(j drmaa2interface.Job) {
-	fmt.Printf("Job with ID %s finished successfully\n", j.GetID())
-}
-
-func failure(j drmaa2interface.Job) {
-	ji, err := j.GetJobInfo()
-	exit := -1
-	if err == nil {
-		exit = ji.ExitStatus
-	}
-	fmt.Printf("Job %s failed with exit status %d\n", j.GetID(), exit)
+	fmt.Printf("New job started job with ID: %s\n", j.GetID())
 }
 
 func main() {
@@ -36,18 +23,28 @@ func main() {
 	// and LD_LIBRARY_PATH for finding libdrmaa.so at runtime.
 
 	sleep := drmaa2interface.JobTemplate{
-		RemoteCommand:  "/bin/sh",
-		Args:           []string{"-c", `echo sleeping $SECONDS second\(s\) && sleep $seconds && whoami`},
-		OutputPath:     "/dev/stdout",
-		ErrorPath:      "/dev/stderr",
-		JobEnvironment: map[string]string{"SECONDS": "1"}, // environment variables set in container
+		JobName:       "testjob",
+		RemoteCommand: "/bin/sleep",
+		Args:          []string{"1"},
 	}
 
 	ctx := libdrmaa.NewLibDRMAAContext().OnError(epanic)
 
 	wf := wfl.NewWorkflow(ctx).OnError(epanic)
 
-	job := wf.RunT(sleep).OnError(epanic).Do(start).OnSuccess(success).OnFailure(failure)
+	fmt.Println("submitting job and waiting for its end")
+	job := wf.RunT(sleep).Wait()
+
+	fmt.Printf("job state: %s\n", job.State())
+	fmt.Printf("exit status: %d\n", job.ExitStatus())
+
+	fmt.Printf("%v\n", job.JobInfo())
+
+	if job.Success() {
+		fmt.Println("succeeded")
+	} else {
+		fmt.Println("failed")
+	}
 
 	job.Wait()
 }

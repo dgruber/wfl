@@ -12,10 +12,13 @@ export PATH=$PATH:/opt/sge/include
 export CGO_LDFLAGS="-L$SGE_ROOT/lib/lx-amd64/"
 export CGO_CFLAGS="-DSOG -I$SGE_ROOT/include"
 
+go get -v -d github.com/dgruber/drmaa2interface
+go get -v -d github.com/dgruber/wfl
+
 # run tests
 cd /go/src/github.com/dgruber/wfl/examples/libdrmaa
-go mod download
-go build
+
+go build .
 
 ./libdrmaa
 

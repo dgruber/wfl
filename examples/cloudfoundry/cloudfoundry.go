@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
-	"os"
+	"github.com/dgruber/wfl/pkg/context/cloudfoundry"
 )
 
 var panicF = func(e error) { panic(e) }
@@ -17,7 +19,7 @@ func main() {
 	// -> cf app <app_name> --guid
 	appGUID := os.Getenv("APP_GUID")
 
-	ctx := wfl.NewCloudFoundryContext().OnError(panicF)
+	ctx := cloudfoundry.NewCloudFoundryContext().OnError(panicF)
 
 	state := wfl.NewJob(wfl.NewWorkflow(ctx).OnError(panicF)).RunT(drmaa2interface.JobTemplate{
 		RemoteCommand: "sleep",

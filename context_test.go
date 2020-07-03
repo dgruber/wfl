@@ -2,6 +2,9 @@ package wfl_test
 
 import (
 	"github.com/dgruber/wfl"
+	"github.com/dgruber/wfl/pkg/context/cloudfoundry"
+	"github.com/dgruber/wfl/pkg/context/docker"
+	"github.com/dgruber/wfl/pkg/context/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,13 +38,13 @@ var _ = Describe("Context", func() {
 
 		Context("Docker Context", func() {
 			It("should be possible to create a docker context", func() {
-				ctx := wfl.NewDockerContext()
+				ctx := docker.NewDockerContext()
 				err := ctx.Error()
 				Ω(err).Should(BeNil())
 				Ω(ctx).ShouldNot(BeNil())
 			})
 			It("should be possible to create a docker context with configuration", func() {
-				ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DBFile: "tmp.db", DefaultDockerImage: "golang:latest"})
+				ctx := docker.NewDockerContextByCfg(docker.Config{DBFile: "tmp.db", DefaultDockerImage: "golang:latest"})
 				err := ctx.Error()
 				Ω(err).Should(BeNil())
 				Ω(ctx).ShouldNot(BeNil())
@@ -50,13 +53,13 @@ var _ = Describe("Context", func() {
 
 		Context("Cloud Foundry Context", func() {
 			It("should be possible to create a cloud foundry tasks context", func() {
-				ctx := wfl.NewCloudFoundryContext()
+				ctx := cloudfoundry.NewCloudFoundryContext()
 				err := ctx.Error()
 				Ω(err).Should(BeNil())
 				Ω(ctx).ShouldNot(BeNil())
 			})
 			It("should be possible to create a cloud foundry tasks context with configuration", func() {
-				ctx := wfl.NewCloudFoundryContextByCfg(wfl.CloudFoundryConfig{DBFile: "tmp.db"})
+				ctx := cloudfoundry.NewCloudFoundryContextByCfg(cloudfoundry.Config{DBFile: "tmp.db"})
 				err := ctx.Error()
 				Ω(err).Should(BeNil())
 				Ω(ctx).ShouldNot(BeNil())
@@ -65,7 +68,7 @@ var _ = Describe("Context", func() {
 
 		Context("Kubernetes Context", func() {
 			It("should be possible to create a Kubernetes context", func() {
-				ctx := wfl.NewKubernetesContext()
+				ctx := kubernetes.NewKubernetesContext()
 				Ω(ctx).ShouldNot(BeNil())
 			})
 		})

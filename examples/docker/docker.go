@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
+	"github.com/dgruber/wfl/pkg/context/docker"
 )
 
 func epanic(e error) { panic(e) }
@@ -53,7 +55,7 @@ func main() {
 	//  Use DOCKER_CERT_PATH to load the TLS certificates from.
 	//  Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default.", Moby, 2017
 	//
-	ctx := wfl.NewDockerContext().OnError(epanic)
+	ctx := docker.NewDockerContext().OnError(epanic)
 
 	wf := wfl.NewWorkflow(ctx).OnError(epanic)
 
