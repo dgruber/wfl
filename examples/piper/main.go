@@ -33,9 +33,15 @@ func filePipeExample() {
 		RemoteCommand: "cat",
 		Args:          []string{"/etc/services"},
 		OutputPath:    filepath.Join(dir, "out"),
-	}).ThenRunT(drmaa2interface.JobTemplate{
+	}).Do(func(j drmaa2interface.Job) {
+		_, err := os.Stat(filepath.Join(dir, "out"))
+		for err != nil {
+			<-time.Tick(time.Millisecond * 2)
+			_, err = os.Stat(filepath.Join(dir, "out"))
+		}
+	}).RunT(drmaa2interface.JobTemplate{
 		RemoteCommand: "sort",
 		InputPath:     filepath.Join(dir, "out"),
 		OutputPath:    "/dev/stdout",
-	}).Wait()
+	}).Synchronize()
 }
