@@ -1,4 +1,4 @@
-module github.com/dgruber/wfl
+module github.com/dgruber/wfl/v2
 
 replace (
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
