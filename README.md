@@ -5,6 +5,11 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 [![CircleCI](https://circleci.com/gh/dgruber/wfl/tree/master.svg?style=svg)](https://circleci.com/gh/dgruber/wfl/tree/master)
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
+> _Update_: In order to reflect the underlying drmaa2os changes which separates
+> different backends more clearly the some context creation functions are moved
+> to pkg/context. That avoids having to deal with dependencies from bigger libraries
+> like Kubernetes or Docker when not using them.
+
 Creating process, container, pod, task, or job workflows based on raw interfaces of
 operating systems, Docker, Singularity, Kubernetes, Cloud Foundry, and HPC job schedulers can be
 a tedios. Lots of repeating code is required. All workload management systems have a
@@ -42,7 +47,13 @@ Running a job as a Docker container requires a different context (and the image
 already pulled before).
 
 ```go
-    ctx := wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})
+    import (
+	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/wfl"
+	"github.com/dgruber/wfl/pkg/context/docker"
+    )
+    
+    ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
     wfl.NewWorkflow(ctx).Run("sleep", "60").Wait()
 ```
 
@@ -56,13 +67,13 @@ method.
     }
     jt.ExtensionList = map[string]string{"exposedPorts": "80:8080/tcp"}
     
-    wfl.NewJob(wfl.NewWorkflow(wfl.NewDockerContext())).RunT(jt).Wait()
+    wfl.NewJob(wfl.NewWorkflow(docker.NewDockerContext())).RunT(jt).Wait()
 ```
 
 Starting a Kubernetes batch job and waiting for its end is not much different.
 
 ```go
-    wfl.NewWorkflow(wfl.NewKubernetesContext()).Run("sleep", "60").Wait()
+    wfl.NewWorkflow(kubernetes.NewKubernetesContext()).Run("sleep", "60").Wait()
 ```
 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
@@ -92,7 +103,8 @@ manually is the _drmaa2interface_.
 ## Context
 
 A context defines the execution backend for the workflow. Contexts can be easily created
-with the _New_ functions which are defined in the _context.go_ file.
+with the _New_ functions which are defined in the _context.go_ file or in the separate
+packages found in _pkg/context_.
 
 For creating a context which executes the jobs of a workflow in operating system processses use:
 
@@ -103,7 +115,7 @@ For creating a context which executes the jobs of a workflow in operating system
 If the workflow needs to be executed in containers the _DockerContext_ can be used: 
 
 ```go
-    wfl.NewDockerContext()
+    docker.NewDockerContext()
 ```
 
 If the Docker context needs to be configured with a default Docker image 
@@ -111,13 +123,13 @@ If the Docker context needs to be configured with a default Docker image
 then the _ContextByCfg()_ can be called.
 
 ```go
-    wfl.NewDockerContextByCfg(wfl.DockerConfig{DefaultDockerImage: "golang:latest"})
+    docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
 ```
 
 When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContext_ can be used:
 
 ```go
-    wfl.NewCloudFoundryContext()
+    cloudfoundry.NewCloudFoundryContext()
 ```
 
 Without a config it uses following environment variables to access the Cloud Foundry cloud controller API:
@@ -129,7 +141,7 @@ Without a config it uses following environment variables to access the Cloud Fou
 For submitting Kubernetes batch jobs a Kubernetes context exists.
 
 ```go
-   ctx := wfl.NewKubernetesContext()
+   ctx := kubernetes.NewKubernetesContext()
 ```
 
 Note that each job requires a container image specified which can be done by using
@@ -137,7 +149,7 @@ the JobTemplate's JobCategory. When the same container image is used within the 
 job workflow it makes sense to use the Kubernetes config.
 
 ```go
-   ctx := wfl.NewKubernetesContextByCfg(wfl.KubernetesConfig{DefaultImage: "busybox:latest"})
+   ctx := kubernetes.NewKubernetesContextByCfg(kubernetes.Config{DefaultImage: "busybox:latest"})
 ```
 
 [Singularity](https://en.wikipedia.org/wiki/Singularity_(software)) containers can be executed
