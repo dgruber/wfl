@@ -10,12 +10,8 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 
-	// we need to load all the packages so that they get registered
-	// TODO initialization needs to be moved to the context package
-	// to reduce dependencies
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker"
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
+	// we need to load all the packages for which context creation function
+	// are provided so that the code gets registered in the init() functions.
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 )
