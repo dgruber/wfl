@@ -22,12 +22,15 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
+      #- run: 
+      #    name: Get dependencies
+      #    command: go get -v -t -d ./...
       - run: 
-          name: Get dependencies
-          command: go get -v -t -d ./...
+          name: Run main tests
+          command: go test -v
       - run: 
-          name: Run all tests
-          command: go test -v ./...
+          name: Run jstream tests
+          command: go test -v ./jstream
       - run: 
           name: Build all examples using wfl itself
           command: cd test && go run test.go
