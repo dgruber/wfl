@@ -368,7 +368,7 @@ func wait(task *task) {
 func (j *Job) Wait() *Job {
 	j.infof(j.ctx, "Wait()")
 	j.lastError = nil
-	if task := j.lastJob(); task != nil {
+	if task := j.lastJob(); task != nil && task.job != nil {
 		j.infof(j.ctx, fmt.Sprintf("Wait() for %s", task.job.GetID()))
 		// check if we waited already (drmaa1 allows only one call)
 		if task.waitForEndStateCollectedJobInfo {
@@ -416,6 +416,9 @@ func (j *Job) ListAllFailed() []drmaa2interface.Job {
 	j.begin(j.ctx, "ListAllFailed()")
 	failed := make([]drmaa2interface.Job, 0, len(j.tasklist))
 	for _, task := range j.tasklist {
+		if task.job == nil {
+			continue
+		}
 		wait(task)
 		if task.job.GetState() == drmaa2interface.Failed {
 			failed = append(failed, task.job)
