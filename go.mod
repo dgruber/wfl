@@ -1,6 +1,6 @@
 module github.com/dgruber/wfl
 
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 
 require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20200413172050-18981bf12b4b // indirect

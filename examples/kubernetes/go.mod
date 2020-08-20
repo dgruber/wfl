@@ -4,7 +4,7 @@ go 1.14
 
 replace (
 	github.com/dgruber/wfl => ../../../wfl
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 )
 
 require github.com/dgruber/wfl v1.1.0
