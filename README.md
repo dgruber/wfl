@@ -203,6 +203,7 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 | -- | -- | -- | -- | 
 |  Run() |  Starts a process, container, or submits a task and comes back immediately | no | | 
 |  RunT() |  Like above but with a JobTemplate as parameter | no | |
+|  RunArray() | Submits a bulk job which runs many iterations of the same command | no | |
 |  Resubmit() | Submits a job _n_-times (Run().Run().Run()...) | no | | 
 |  RunEvery() | Submits a task every d _time.Duration_ | yes | |
 |  RunEveryT() | Like _RunEvery()_ but with JobTemplate as param | yes | |
@@ -266,6 +267,7 @@ default template when creating the context (_...ByConfig()_). Then each _Run()_ 
 I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa2interface/blob/master/jobtemplate.go). In most cases only _RemoteCommand_, _Args_, _WorkingDirectory_, _JobCategory_, _JobEnvironment_,  _StageInFiles_ are evaluated. Functionality and semantic is up to the underlying [drmaa2os job tracker](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker).
 
 - [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
+- [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
 - [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
 - [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 - [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)

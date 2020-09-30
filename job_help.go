@@ -3,6 +3,7 @@ package wfl
 import (
 	"context"
 	"errors"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/mitchellh/copystructure"
 )
@@ -67,15 +68,58 @@ func mergeStringMap(dst, src map[string]string) map[string]string {
 }
 
 func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
-	job, err := j.jobCheck()
+	job, jobArray, err := j.jobCheck()
 	if err != nil {
 		return drmaa2interface.Undetermined
 	}
-	lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
-	if lastError != nil {
-		return drmaa2interface.Undetermined
+	if job != nil {
+		lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
+		if lastError != nil {
+			return drmaa2interface.Undetermined
+		}
+		return job.GetState()
 	}
-	return job.GetState()
+	return jobArrayState(jobArray, true)
+}
+
+func jobArrayState(jobArray drmaa2interface.ArrayJob, wait bool) drmaa2interface.JobState {
+	// it is a job array - waiting for each single task
+	// if one of the tasks failed - the whole job array failed
+	// if one of the tasks is undetermined and the rest is done, the array
+	// is undetermined.
+	jobArrayState := drmaa2interface.Done
+	for _, job := range jobArray.GetJobs() {
+		if wait {
+			lastError := job.WaitTerminated(drmaa2interface.InfiniteTime)
+			if lastError != nil {
+				return drmaa2interface.Undetermined
+			}
+		}
+		switch job.GetState() {
+		case drmaa2interface.Done:
+			continue
+		case drmaa2interface.Failed:
+			// overwrites all
+			jobArrayState = drmaa2interface.Failed
+		case drmaa2interface.Undetermined:
+			// overwrites done
+			if jobArrayState == drmaa2interface.Done {
+				jobArrayState = drmaa2interface.Undetermined
+			}
+		}
+	}
+	return jobArrayState
+}
+
+func waitArrayJobTerminated(jobArray drmaa2interface.ArrayJob) error {
+	var lastErr error
+	for _, job := range jobArray.GetJobs() {
+		err := job.WaitTerminated(drmaa2interface.InfiniteTime)
+		if err != nil {
+			lastErr = err
+		}
+	}
+	return lastErr
 }
 
 func (j *Job) lastJob() *task {
@@ -85,16 +129,16 @@ func (j *Job) lastJob() *task {
 	return j.tasklist[len(j.tasklist)-1]
 }
 
-func (j *Job) jobCheck() (drmaa2interface.Job, error) {
-	if task := j.lastJob(); task == nil {
+func (j *Job) jobCheck() (drmaa2interface.Job, drmaa2interface.ArrayJob, error) {
+	task := j.lastJob()
+	if task == nil {
 		j.errorf(j.ctx, "jobCheck(): task is nil")
-		return nil, errors.New("job task not available")
-	} else if task.job == nil {
+		return nil, nil, errors.New("job task not available")
+	} else if task.job == nil && task.jobArray == nil {
 		j.errorf(j.ctx, "jobCheck(): task has no drmaa2 job")
-		return nil, errors.New("job not available")
-	} else {
-		return task.job, nil
+		return nil, nil, errors.New("job not available")
 	}
+	return task.job, task.jobArray, nil
 }
 
 func (j *Job) checkCtx() error {

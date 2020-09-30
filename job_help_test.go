@@ -168,4 +168,58 @@ var _ = g.Describe("JobHelp", func() {
 		})
 	})
 
+	g.Context("Job related", func() {
+
+		g.It("it should wait and return a job end state", func() {
+			flow := NewWorkflow(NewProcessContext())
+			job := NewJob(flow)
+
+			emptyJobState := waitForJobEndAndState(job)
+			Ω(emptyJobState.String()).To(Equal(drmaa2interface.Undetermined.String()))
+
+			job.Run("/bin/sleep", "0.5")
+			finishedJobState := waitForJobEndAndState(job)
+			Ω(finishedJobState.String()).To(Equal(drmaa2interface.Done.String()))
+
+			job.Run("/bin/bash", "-c", "exit 1")
+			failedJobState := waitForJobEndAndState(job)
+			Ω(failedJobState.String()).To(Equal(drmaa2interface.Failed.String()))
+		})
+
+		g.It("should return the job array state", func() {
+			flow := NewWorkflow(NewProcessContext())
+			job := NewJob(flow)
+
+			// all done
+			job.RunArray(1, 10, 1, 2, "/bin/bash", "-c", "exit 0")
+			task := job.lastJob()
+			Ω(task.isJobArray).Should(BeTrue())
+			Ω(task.jobArray).ShouldNot(BeNil())
+			Ω(jobArrayState(task.jobArray, true).String()).Should(Equal(drmaa2interface.Done.String()))
+
+			// one failed ($TASK_ID is set for each job array task)
+			job.RunArray(1, 2, 1, 2, "/bin/bash", "-c", "exit $((TASK_ID - 1))")
+			task = job.lastJob()
+			Ω(task.isJobArray).Should(BeTrue())
+			Ω(task.jobArray).ShouldNot(BeNil())
+			Ω(jobArrayState(task.jobArray, true).String()).Should(Equal(drmaa2interface.Failed.String()))
+
+			// one done but exit code 0 / wait after submission
+			job.RunArray(1, 1, 1, 1, "/bin/bash", "-c", "exit $((TASK_ID - 1))").Wait()
+			task = job.lastJob()
+			Ω(task.isJobArray).Should(BeTrue())
+			Ω(task.jobArray).ShouldNot(BeNil())
+			Ω(jobArrayState(task.jobArray, false).String()).Should(Equal(drmaa2interface.Done.String()))
+
+			// one failed with exit code 1 / wait after submission
+			job.RunArray(1, 2, 2, 1, "/bin/bash", "-c", "exit $((TASK_ID - 1))").Wait()
+			task = job.lastJob()
+			Ω(task.isJobArray).Should(BeTrue())
+			Ω(task.jobArray).ShouldNot(BeNil())
+			Ω(jobArrayState(task.jobArray, false).String()).Should(Equal(drmaa2interface.Done.String()))
+
+		})
+
+	})
+
 })
