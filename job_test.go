@@ -401,6 +401,29 @@ var _ = Describe("Job", func() {
 
 	})
 
+	Context("Job Array", func() {
+
+		var (
+			flow *wfl.Workflow
+		)
+
+		BeforeEach(func() {
+			flow = makeWfl()
+		})
+
+		It("should run a bunch of jobs", func() {
+			job := flow.RunArrayJob(1, 10, 1, 5, "sleep", "0").Wait()
+			Ω(job.Success()).Should(BeTrue())
+		})
+
+		It("should run a bunch of failing jobs", func() {
+			job := flow.RunArrayJob(1, 10, 1, 5, "/bin/bash", "-c", "exit 77").Wait()
+			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))
+			Ω(job.Success()).Should(BeFalse())
+		})
+
+	})
+
 	Context("Basic error cases", func() {
 
 		It("should error when no workflow is defined in a job", func() {

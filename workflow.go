@@ -92,3 +92,12 @@ func (w *Workflow) Run(cmd string, args ...string) *Job {
 func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return NewJob(w).RunT(jt)
 }
+
+// RunArrayJob executes the given command multiple times as specified with begin,
+// end, and step. To run a command 10 times, begin can be set to 1, end to 10 and
+// step to 1. maxParallel can limit the amount of executions which are running in
+// parallel if supported by the context. The process context sets the TASK_ID env
+// variable to the task ID.
+func (w *Workflow) RunArrayJob(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
+	return NewJob(w).RunArray(begin, end, step, maxParallel, cmd, args...)
+}

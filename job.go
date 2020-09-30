@@ -22,6 +22,8 @@ type task struct {
 	jobinfoError                    error
 	retry                           int
 	waitForEndStateCollectedJobInfo bool
+	isJobArray                      bool
+	jobArray                        drmaa2interface.ArrayJob
 }
 
 // Job defines methods for job life-cycle management. A job is
@@ -70,16 +72,20 @@ func (j *Job) Tag() string {
 func (j *Job) Template() *drmaa2interface.JobTemplate {
 	j.begin(j.ctx, "Template()")
 	j.lastError = nil
-	if job, err := j.jobCheck(); err != nil {
+	if job, jobArray, err := j.jobCheck(); err != nil {
 		j.lastError = err
-	} else {
-		if template, errTmp := job.GetJobTemplate(); errTmp != nil {
+	} else if job != nil {
+		template, errTmp := job.GetJobTemplate()
+		if errTmp != nil {
 			j.errorf(j.ctx, "Template() [JobID: %s]: GetJobTemplate() failed with %s",
 				j.JobID(), errTmp.Error())
 			j.lastError = errTmp
 		} else {
 			return &template
 		}
+	} else if jobArray != nil {
+		template := jobArray.GetJobTemplate()
+		return &template
 	}
 	return nil
 }
@@ -92,35 +98,43 @@ func (j *Job) State() drmaa2interface.JobState {
 	if task != nil && task.waitForEndStateCollectedJobInfo && task.jobinfoError == nil {
 		return task.jobinfo.State
 	}
-	job, err := j.jobCheck()
+	job, jobArray, err := j.jobCheck()
 	if err != nil {
 		j.lastError = err
 		return drmaa2interface.Undetermined
 	}
-	return job.GetState()
+	if job != nil {
+		return job.GetState()
+	}
+	return jobArrayState(jobArray, false)
 }
 
 // JobID returns the job ID of the previously submitted job.
 func (j *Job) JobID() string {
 	j.begin(j.ctx, "JobID()")
-	job, err := j.jobCheck()
+	job, jobArray, err := j.jobCheck()
 	if err != nil {
 		j.lastError = err
 		return ""
 	}
-	return job.GetID()
+	if job != nil {
+		return job.GetID()
+	}
+	return jobArray.GetID()
 }
 
 // JobInfo returns information about the last task/job. Which values
 // are actually set depends on the DRMAA2 implementation of
 // the backend specified in the context.
+// TODO job array support
 func (j *Job) JobInfo() drmaa2interface.JobInfo {
 	j.begin(j.ctx, "JobInfo()")
-	job, err := j.jobCheck()
+	job, _, err := j.jobCheck()
 	if err != nil {
 		j.lastError = err
 		return drmaa2interface.JobInfo{}
 	}
+
 	// check if a previous wait() call has the JobInfo already - drmaa1
 	// allows only one call before the info is reaped
 	task := j.lastJob()
@@ -143,6 +157,7 @@ func (j *Job) JobInfo() drmaa2interface.JobInfo {
 // workflow. JobInfo contains run-time details of the jobs. The
 // availability of the values depends on the underlying DRMAA2 implementation
 // of the execution Context.
+// TODO job array support
 func (j *Job) JobInfos() []drmaa2interface.JobInfo {
 	j.begin(j.ctx, "JobInfos()")
 	jis := make([]drmaa2interface.JobInfo, 0, len(j.tasklist))
@@ -195,15 +210,38 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 	return j
 }
 
+// RunArray executes the given command multiple times. If begin is set to 1
+// end to 10, and step to 1, it executes the command 10 times. Each job run
+// gets a different internal array job task ID enviornment variable set
+// which depends on the backend. The maxParallel parameter is respected
+// only by some backends. It restricts the parallel execution to that amount
+// of commands at any given time. If set to 1 it forces sequential execution.
+// If not required it should be set to the total amount of tasks specified.
+func (j *Job) RunArray(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
+	j.begin(j.ctx, fmt.Sprintf("RunArray(%d, %d, %d, %d, %s, %v)", begin, end, step, maxParallel, cmd, args))
+	if err := j.checkCtx(); err != nil {
+		j.lastError = err
+		return j
+	}
+	jt := drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args}
+	job, err := j.wfl.js.RunBulkJobs(jt, begin, end, step, maxParallel)
+	j.lastError = err
+	jobTemplate, _ := copystructure.Copy(jt)
+	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
+		template: jobTemplate.(drmaa2interface.JobTemplate)})
+	return j
+}
+
 // Do executes a function which gets the DRMAA2 job object as parameter.
 // This allows working with the low-level DRMAA2 job object.
+// Does not work with Job Arrays. (TODO execute on all job array tasks)
 func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
 	j.begin(j.ctx, fmt.Sprintf("Do(%s)",
 		runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()),
 	)
-	job, err := j.jobCheck()
+	job, _, err := j.jobCheck()
 	// do not store error as it overrides job action errors
-	if err == nil {
+	if err == nil && job != nil {
 		f(job)
 	} else {
 		j.errorf(j.ctx,
@@ -219,33 +257,48 @@ func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
 // sent to the tasks of the job.
 func (j *Job) Suspend() *Job {
 	j.begin(j.ctx, "Suspend()")
-	if job, err := j.jobCheck(); err != nil {
+	job, jobArray, err := j.jobCheck()
+	if err != nil {
 		j.lastError = err
-	} else {
-		j.lastError = job.Suspend()
+		return j
 	}
+	if job != nil {
+		j.lastError = job.Suspend()
+		return j
+	}
+	j.lastError = jobArray.Suspend()
 	return j
 }
 
 // Resume continues a suspended job to continue execution.
 func (j *Job) Resume() *Job {
 	j.begin(j.ctx, "Resume()")
-	if job, err := j.jobCheck(); err != nil {
+	job, jobArray, err := j.jobCheck()
+	if err != nil {
 		j.lastError = err
-	} else {
-		j.lastError = job.Resume()
+		return j
 	}
+	if job != nil {
+		j.lastError = job.Resume()
+		return j
+	}
+	j.lastError = jobArray.Resume()
 	return j
 }
 
 // Kill stops the job from execution.
 func (j *Job) Kill() *Job {
 	j.begin(j.ctx, "Kill()")
-	if job, err := j.jobCheck(); err != nil {
+	job, jobArray, err := j.jobCheck()
+	if err != nil {
 		j.lastError = err
-	} else {
-		j.lastError = job.Terminate()
+		return j
 	}
+	if job != nil {
+		j.lastError = job.Terminate()
+		return j
+	}
+	j.lastError = jobArray.Terminate()
 	return j
 }
 
@@ -275,7 +328,7 @@ func replaceTask(j *Job, e *task) {
 func (j *Job) Resubmit(r int) *Job {
 	j.begin(j.ctx, fmt.Sprintf("Resubmit(%d)", r))
 	for i := 0; i < r || r == -1; i++ {
-		if t := j.lastJob(); t != nil {
+		if t := j.lastJob(); t != nil && !t.isJobArray {
 			rerunTask(j, t)
 		} else {
 			j.errorf(
@@ -293,9 +346,16 @@ func (j *Job) Resubmit(r int) *Job {
 func (j *Job) AnyFailed() bool {
 	j.begin(j.ctx, "AnyFailed()")
 	for _, task := range j.tasklist {
-		if task.job.GetState() == drmaa2interface.Failed {
-			return true
+		if !task.isJobArray {
+			if task.job.GetState() == drmaa2interface.Failed {
+				return true
+			}
+		} else {
+			if jobArrayState(task.jobArray, false) == drmaa2interface.Failed {
+				return true
+			}
 		}
+
 	}
 	return false
 }
@@ -351,10 +411,16 @@ func (j *Job) After(d time.Duration) *Job {
 }
 
 func wait(task *task) {
-	if task.job == nil {
+	if task.terminated == true {
 		return
 	}
-	if task.terminated == true {
+	if task.job == nil {
+		if task.jobArray == nil {
+			return
+		}
+		task.terminationError = waitArrayJobTerminated(task.jobArray)
+		task.terminated = true
+		// TODO chache job info
 		return
 	}
 	task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
@@ -364,13 +430,18 @@ func wait(task *task) {
 	task.waitForEndStateCollectedJobInfo = true
 }
 
-// Wait until the most recently task was finished.
+// Wait until the most recent task is finished. In case of a job array it waits
+// for all tasks of the array.
 func (j *Job) Wait() *Job {
 	j.infof(j.ctx, "Wait()")
 	j.lastError = nil
-	if task := j.lastJob(); task != nil && task.job != nil {
-		j.infof(j.ctx, fmt.Sprintf("Wait() for %s", task.job.GetID()))
-		// check if we waited already (drmaa1 allows only one call)
+	if task := j.lastJob(); task != nil {
+		if task.job != nil {
+			j.infof(j.ctx, fmt.Sprintf("Wait() for job %s", task.job.GetID()))
+		} else if task.jobArray != nil {
+			j.infof(j.ctx, fmt.Sprintf("Wait() for job array %s", task.jobArray.GetID()))
+		}
+		// check if we waited already (drmaa1 allows only one API call for job info)
 		if task.waitForEndStateCollectedJobInfo {
 			return j
 		}
@@ -508,18 +579,25 @@ func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 	return j
 }
 
-// ThenRun waits until the previous task is terminated and executes then
+// ThenRun waits until the previous task is terminated and then executes
 // the given command as new task.
 func (j *Job) ThenRun(cmd string, args ...string) *Job {
 	j.begin(j.ctx, "ThenRun()")
 	return j.Wait().Run(cmd, args...)
 }
 
-// ThenRunT waits until the previous task is terminated and executes then
+// ThenRunT waits until the previous task is terminated and then executes
 // a new task based on the given JobTemplate.
 func (j *Job) ThenRunT(jt drmaa2interface.JobTemplate) *Job {
 	j.begin(j.ctx, "ThenRunT()")
 	return j.Wait().RunT(jt)
+}
+
+// ThenRunArray waits until the previous task is terminated and then executes
+// a new task based on the given JobTemplate.
+func (j *Job) ThenRunArray(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
+	j.begin(j.ctx, "ThenRunArray()")
+	return j.Wait().RunArray(begin, end, step, maxParallel, cmd, args...)
 }
 
 // OnSuccess executes the given function after the previously submitted
