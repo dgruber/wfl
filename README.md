@@ -76,6 +76,12 @@ Starting a Kubernetes batch job and waiting for its end is not much different.
     wfl.NewWorkflow(kubernetes.NewKubernetesContext()).Run("sleep", "60").Wait()
 ```
 
+_wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine and so on.
+
+```go
+    wfl.NewWorkflow(libdrmaa.NewLibDRMAAContext()).Run("sleep", "60").Wait()
+```
+
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
 management - moving results from one job to another. That's deliberately not implemented.
@@ -163,8 +169,28 @@ executes a separate Singularity container process.
    ctx := wfl.NewSingularityContextByCfg(wfl.SingularityConfig{DefaultImage: ""}))
 ```
 
-Contexts for other container engines or workload managers like DRMAA compatible HPC schedulers,
-etc. will be supported when the DRMAA2 job tracker implementation is available.
+For working with HPC schedulers the libdrmaa context can be used. This context requires
+_libdrmaa.so_ available in the library path at runtime. Grid Engine ships _libdrmaa.so_
+but the _LD_LIBRARY_PATH_ needs to be typically set. For SLURM _libdrmaa.so_ often needs
+to be [build](https://github.com/natefoo/slurm-drmaa).
+
+Since C go is used under the hood (drmaa2os which uses go drmaa) some compiler flags needs
+to be set during build time. Those flags depend on the workload manager used. Best check
+out the go drmaa project for finding the right flags.
+
+For building SLURM requires:
+
+	export CGO_LDFLAGS="-L$SLURM_DRMAA_ROOT/lib"
+	export CGO_CFLAGS="-DSLURM -I$SLURM_DRMAA_ROOT/include"
+
+If all set a libdrmaa context can be created by importing:
+
+```go
+   ctx := libdrmaa.NewLibDRMAAContext()
+```
+
+The JobCategory is whatever the workloadmanager associates with it. Typically it is a
+set of submission parameters. A basic example is [here](https://github.com/dgruber/wfl/blob/master/examples/libdrmaa/libdrmaa.go).
 
 ## Workflow
 
