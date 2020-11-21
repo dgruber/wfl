@@ -6,7 +6,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
 > _Update_: In order to reflect the underlying drmaa2os changes which separates
-> different backends more clearly the some context creation functions are moved
+> different backends more clearly some context creation functions are moved
 > to pkg/context. That avoids having to deal with dependencies from bigger libraries
 > like Kubernetes or Docker when not using them.
 
