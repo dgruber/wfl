@@ -33,6 +33,9 @@ func mergeJobTemplateWithDefaultTemplate(req, def drmaa2interface.JobTemplate) d
 	if req.JobName == "" {
 		req.JobName = def.JobName
 	}
+	if req.WorkingDirectory == "" {
+		req.WorkingDirectory = def.WorkingDirectory
+	}
 	// replaces destination machines
 	if req.CandidateMachines == nil && def.CandidateMachines != nil {
 		if cm, err := copystructure.Copy(def.CandidateMachines); err == nil {
