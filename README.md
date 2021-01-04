@@ -219,7 +219,14 @@ or with
 
 ## Job
 
-Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining calls in an easy way. A job can also be seen as a container and control unit for tasks.
+Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining calls in an easy way. A job can also be seen as a container and control unit for tasks. Tasks are often mapped to jobs of the underlying
+workload manager (like in Kubernetes, HPC schedulers etc.).
+
+In some systems it is required to delete job related resources after the job is finished
+and no more information needs to be queried about its execution. This functionality is
+implemented in the DRMAA2 Reap() method which can be executed by ReapAll() for each
+task in the job object. Afterwards the job object should not be used anymore as some
+information might not be available anymore.
 
 Methods can be classified in blocking, non-blocking, job template based, function based, and error handlers.
 
@@ -284,7 +291,9 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 | LastError() |   | no | | 
 | Failed() |   | no | | 
 | Success() |   | no | | 
-| ExitStatus() |   | no | | 
+| ExitStatus() |   | no | |
+| ReapAll() | Cleans up all job related resources from the workload manager. Do not
+use the job object afterwards. Calls DRMAA2 Reap() on all tasks. | no | |
 
 ## JobTemplate
 

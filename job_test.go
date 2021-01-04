@@ -372,6 +372,7 @@ var _ = Describe("Job", func() {
 				interation++
 				job.RetryAnyFailed(1)
 			}
+			job.ReapAll()
 		})
 
 		Context("JobInfo related functions", func() {

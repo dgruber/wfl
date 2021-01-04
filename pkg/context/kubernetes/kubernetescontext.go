@@ -5,8 +5,8 @@ import (
 	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/wfl"
 
-	// we need to load kubernetes jobtracker
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
+	// we need to load Kubernetes jobtracker
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 )
 
 // Config describes the default container image to use when no other
@@ -16,6 +16,8 @@ type Config struct {
 	DefaultImage    string
 	DBFile          string
 	DefaultTemplate drmaa2interface.JobTemplate
+	// Namespace in which the jobs are submitted. Defaults to "default".
+	Namespace string
 }
 
 // NewKubernetesContextByCfg creates a new Context with kubernetes as
@@ -26,7 +28,11 @@ func NewKubernetesContextByCfg(cfg Config) *wfl.Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = wfl.TmpFile()
 	}
-	sessionManager, err := drmaa2os.NewKubernetesSessionManager(nil, cfg.DBFile)
+	sessionManager, err := drmaa2os.NewKubernetesSessionManager(
+		kubernetestracker.KubernetesTrackerParameters{
+			Namespace: cfg.Namespace,
+			ClientSet: nil,
+		}, cfg.DBFile)
 	return &wfl.Context{
 		SM:                 sessionManager,
 		DefaultDockerImage: cfg.DefaultImage,

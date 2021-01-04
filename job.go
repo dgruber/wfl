@@ -527,6 +527,20 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 	return j
 }
 
+// ReapAll removes all job resources from the workload manager. It calls
+// the DRMAA2 Reap() method for all tasks. The behavior is backend specific.
+// After the ReapAll() call the job object should not be used anymore.
+// Reap() must be called only when all tasks are in a terminated state.
+func (j *Job) ReapAll() *Job {
+	j.begin(j.ctx, fmt.Sprintf("ReapAll()"))
+	for _, task := range j.tasklist {
+		if task.job != nil {
+			task.job.Reap()
+		}
+	}
+	return j
+}
+
 // Success returns true in case the current task stated equals drmaa2interface.Done
 // and the job exit status is 0.
 func (j *Job) Success() bool {
