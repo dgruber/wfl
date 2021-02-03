@@ -1,6 +1,7 @@
 package wfl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -100,4 +101,46 @@ func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
 // variable to the task ID.
 func (w *Workflow) RunArrayJob(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
 	return NewJob(w).RunArray(begin, end, step, maxParallel, cmd, args...)
+}
+
+// ListJobs returns all jobs visible in the workflow (i.e. available
+// in the underlying drmaa2session). It may wrap one task in one Job
+// object and return multiple Job objects even when only one Job with
+// many tasks was submitted.
+func (w *Workflow) ListJobs() []*Job {
+	d2jobs, err := w.js.GetJobs(drmaa2interface.CreateJobInfo())
+	if err != nil {
+		w.log.Errorf(context.Background(), "workflow.ListJobs() failed with: %v", err)
+		return nil
+	}
+	jobs := make([]*Job, 0, len(d2jobs))
+
+	for _, d2job := range d2jobs {
+		template, _ := d2job.GetJobTemplate()
+		jobInfo, _ := d2job.GetJobInfo()
+		state := d2job.GetState()
+		terminated := false
+		if state == drmaa2interface.Failed || state == drmaa2interface.Done {
+			terminated = true
+		}
+		jobs = append(jobs,
+			&Job{
+				wfl: w,
+				tasklist: []*task{{
+					job:                             d2job,
+					template:                        template,
+					jobinfo:                         jobInfo,
+					terminated:                      terminated,
+					submitError:                     nil,
+					terminationError:                nil,
+					jobinfoError:                    nil,
+					retry:                           0,
+					waitForEndStateCollectedJobInfo: false,
+					isJobArray:                      false,
+					jobArray:                        nil,
+				}},
+			})
+	}
+
+	return jobs
 }

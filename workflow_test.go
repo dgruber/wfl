@@ -129,6 +129,33 @@ var _ = Describe("Workflow", func() {
 
 	})
 
+	Context("ListJobs", func() {
+		jtemplate := drmaa2interface.JobTemplate{RemoteCommand: "/bin/sleep", Args: []string{"0"}}
+
+		BeforeEach(func() {
+			os.Remove("tmp.db")
+		})
+
+		It("should list jobs", func() {
+			// create a new workflow and seach for past jobs
+			flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(
+				wfl.ProcessConfig{},
+			))
+
+			jobs := flow.ListJobs()
+			Ω(len(jobs)).Should(BeNumerically("==", 0))
+
+			job := flow.RunT(jtemplate).Wait()
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.LastError()).Should(BeNil())
+
+			jobs = flow.ListJobs()
+			Ω(len(jobs)).Should(BeNumerically("==", 1))
+			Ω(jobs[0].JobInfo().ID).ShouldNot(Equal(""))
+		})
+
+	})
+
 	Context("Logger", func() {
 
 		BeforeEach(func() {
