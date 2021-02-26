@@ -137,7 +137,6 @@ var _ = Describe("Workflow", func() {
 		})
 
 		It("should list jobs", func() {
-			// create a new workflow and seach for past jobs
 			flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(
 				wfl.ProcessConfig{},
 			))
