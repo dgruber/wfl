@@ -10,8 +10,8 @@ replace (
 require (
 	github.com/containerd/containerd v1.4.3 // indirect
 	github.com/dgruber/drmaa2interface v1.0.2
-	github.com/dgruber/drmaa2os v0.3.9
-	github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20210226134924-0c3d0361cded
+	github.com/dgruber/drmaa2os v0.3.10
+	github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20210226091710-ceb83e9b4fff
 	github.com/googleapis/gnostic v0.5.4 // indirect
 	github.com/mitchellh/copystructure v1.1.1
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect

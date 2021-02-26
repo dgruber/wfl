@@ -136,6 +136,8 @@ github.com/dgruber/drmaa2os v0.3.8 h1:DG09rGv+jT4DXvnqYaC3Y16dtw4IsTdszHtA2Yc5NW
 github.com/dgruber/drmaa2os v0.3.8/go.mod h1:C4y54epYwjiQh+jNdr5OkADTTmzjbAoIUH4G4trwzS4=
 github.com/dgruber/drmaa2os v0.3.9 h1:eF6H79R0Q5iTPKTg7uo2Ka0mFhXskdJCrA3YaeawkTQ=
 github.com/dgruber/drmaa2os v0.3.9/go.mod h1:5LxJtM+RQoDze4aPVSuErQ3AiLbhLZD90Q5CHpRABcg=
+github.com/dgruber/drmaa2os v0.3.10 h1:3TGOSJArTf9paxS8QFgRKGmYmqxH4fUPNh/yVhvflTQ=
+github.com/dgruber/drmaa2os v0.3.10/go.mod h1:NHH4Yj+CVxC49SzW9dRudXg7D7TQMNpHVDWqsWOdW5Q=
 github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20200831063203-2c2e9d804139/go.mod h1:PmcYI6OZ78HF0iBi/Y/TYFAshnP9DqM1qO46ZT/Slvo=
 github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20201125152403-8f166a429464 h1:c9t4LbBRjt31GdPMaFn84u26vNDpmqQxacDCtQ+DbIg=
 github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20201125152403-8f166a429464/go.mod h1:PmcYI6OZ78HF0iBi/Y/TYFAshnP9DqM1qO46ZT/Slvo=
