@@ -1,7 +1,6 @@
 module github.com/dgruber/wfl
 
 replace (
-	//github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
     github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4
 	k8s.io/api => k8s.io/api v0.20.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
@@ -10,7 +9,7 @@ replace (
 
 require (
 	github.com/dgruber/drmaa2interface v1.0.2
-	github.com/dgruber/drmaa2os v0.3.8
+	github.com/dgruber/drmaa2os v0.3.9
 	github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20210226091710-ceb83e9b4fff
 	github.com/googleapis/gnostic v0.5.4 // indirect
 	github.com/mitchellh/copystructure v1.1.1
