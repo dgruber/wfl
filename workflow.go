@@ -103,6 +103,12 @@ func (w *Workflow) RunArrayJob(begin, end, step, maxParallel int, cmd string, ar
 	return NewJob(w).RunArray(begin, end, step, maxParallel, cmd, args...)
 }
 
+// RunArrayJob executes the given job defined in the JobTemplate multiple times.
+// See RunArrayJob().
+func (w *Workflow) RunArrayJobT(begin, end, step, maxParallel int, jt drmaa2interface.JobTemplate) *Job {
+	return NewJob(w).RunArrayT(begin, end, step, maxParallel, jt)
+}
+
 // ListJobs returns all jobs visible in the workflow (i.e. available
 // in the underlying drmaa2session). It may wrap one task in one Job
 // object and return multiple Job objects even when only one Job with

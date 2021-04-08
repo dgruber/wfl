@@ -106,6 +106,17 @@ var _ = Describe("Workflow", func() {
 			Ω(job.LastError()).Should(BeNil())
 		})
 
+		It("should run a simplified ArrayJob in workflow", func() {
+			job := wfl.NewWorkflow(wfl.NewProcessContext()).RunArrayJob(1, 2, 1, 1, "sleep", "0")
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.LastError()).Should(BeNil())
+		})
+
+		It("should run an ArrayJob with a JobTemplate in workflow", func() {
+			job := wfl.NewWorkflow(wfl.NewProcessContext()).RunArrayJobT(1, 2, 1, 1, jtemplate)
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.LastError()).Should(BeNil())
+		})
 	})
 
 	Context("Multiple workflows", func() {

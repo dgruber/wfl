@@ -232,6 +232,22 @@ func (j *Job) RunArray(begin, end, step, maxParallel int, cmd string, args ...st
 	return j
 }
 
+// RunArrayT executes the job defined in a JobTemplate multiple times. See also
+// RunArray().
+func (j *Job) RunArrayT(begin, end, step, maxParallel int, jt drmaa2interface.JobTemplate) *Job {
+	j.begin(j.ctx, fmt.Sprintf("RunArrayT(%d, %d, %d, %d, %v)", begin, end, step, maxParallel, jt))
+	if err := j.checkCtx(); err != nil {
+		j.lastError = err
+		return j
+	}
+	job, err := j.wfl.js.RunBulkJobs(jt, begin, end, step, maxParallel)
+	j.lastError = err
+	jobTemplate, _ := copystructure.Copy(jt)
+	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
+		template: jobTemplate.(drmaa2interface.JobTemplate)})
+	return j
+}
+
 // Do executes a function which gets the DRMAA2 job object as parameter.
 // This allows working with the low-level DRMAA2 job object.
 // Does not work with Job Arrays. (TODO execute on all job array tasks)
