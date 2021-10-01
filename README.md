@@ -84,9 +84,13 @@ _wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine 
 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
-management - moving results from one job to another. That's deliberately not implemented.
+management - moving results from one job to another. That's deliberately not implemented. But 
+some backend implementations (like for Kubernetes) support basic filetransfer in the
+_JobTemplate_ (when using _RunT()_) using the _StageInFiles_ and _StageOutFiles_ maps.
 On large scale you are missing checkpoint and restart functionality or HA of the workflow 
-process itself.
+process itself. Here the idea is not to require any complicated runtime environment
+for the workflow applications rather keeping workflows small and repeatably executable
+from other workflows.
 
 _wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
 
