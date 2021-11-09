@@ -12,7 +12,8 @@ import (
 
 	// we need to load all the packages for which context creation function
 	// are provided so that the code gets registered in the init() functions.
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	// need to run Init() to have capabilities available
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 )
 
@@ -87,7 +88,22 @@ func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = TmpFile()
 	}
-	sm, err := drmaa2os.NewDefaultSessionManager(cfg.DBFile)
+	return NewProcessContextByCfgWithInitParams(ProcessConfig{
+		DBFile:          cfg.DBFile,
+		DefaultTemplate: cfg.DefaultTemplate},
+		simpletracker.SimpleTrackerInitParams{
+			UsePersistentJobStorage: false,
+			DBFilePath:              "",
+		})
+}
+
+// NewProcessContextByCfgWithInitParams returns a new *Context which manages processes
+// which is configured by the ProcessConfig.
+func NewProcessContextByCfgWithInitParams(cfg ProcessConfig, initParams simpletracker.SimpleTrackerInitParams) *Context {
+	if cfg.DBFile == "" {
+		cfg.DBFile = TmpFile()
+	}
+	sm, err := drmaa2os.NewDefaultSessionManagerWithParams(initParams, cfg.DBFile)
 	return &Context{
 		SM:              sm,
 		DefaultTemplate: cfg.DefaultTemplate,
