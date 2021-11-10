@@ -28,10 +28,7 @@ jobs:
       #    command: go get -v -t -d ./...
       - run: 
           name: Run main tests
-          command: go test -v
-      - run: 
-          name: Run jstream tests
-          command: go test -v -timeout 20m ./jstream
+          command: go get -u github.com/onsi/ginkgo/ginkgo && ginkgo -a -v
       - run: 
           name: Build all examples using wfl itself
           command: cd test && go run test.go

@@ -28,10 +28,6 @@ func (tl *testLogger) Errorf(ctx context.Context, s string, args ...interface{})
 
 var _ = Describe("Workflow", func() {
 
-	AfterSuite(func() {
-		os.Remove("tmp.db")
-	})
-
 	Context("Create a workflow successfully", func() {
 		BeforeEach(func() {
 			os.Remove("tmp.db")
