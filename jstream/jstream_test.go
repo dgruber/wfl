@@ -53,7 +53,7 @@ var _ = Describe("Jstream", func() {
 		})
 
 		It("should be possible to create a stream", func() {
-			stream := NewStream(cfg, NewSequenceBreaker(100))
+			stream := NewStream(cfg, NewSequenceBreaker(10))
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).Should(BeNil())
 			Ω(stream.HasError()).Should(BeFalse())
@@ -94,7 +94,7 @@ var _ = Describe("Jstream", func() {
 		})
 
 		It("should be possible to Apply() a function on the jobs of a stream", func() {
-			stream := NewStream(cfg, NewSequenceBreaker(100))
+			stream := NewStream(cfg, NewSequenceBreaker(10))
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).Should(BeNil())
 			Ω(stream.HasError()).Should(BeFalse())
@@ -107,7 +107,7 @@ var _ = Describe("Jstream", func() {
 
 			stream.Apply(counter).Consume()
 
-			Ω(amount).Should(BeNumerically("==", 100))
+			Ω(amount).Should(BeNumerically("==", 10))
 
 			amount = 0
 			NewStream(cfg, NewSequenceBreaker(50)).ApplyAsync(counter).Consume()
@@ -143,7 +143,7 @@ var _ = Describe("Jstream", func() {
 				}
 				return j
 			}
-			NewStream(cfg, NewSequenceBreaker(100)).Synchronize().Apply(isFinished).Consume()
+			NewStream(cfg, NewSequenceBreaker(10)).Synchronize().Apply(isFinished).Consume()
 			Ω(notDone).Should(BeNumerically("==", 0))
 		})
 
@@ -174,7 +174,7 @@ var _ = Describe("Jstream", func() {
 
 		It("should be possible to Tee() a stream", func() {
 			cfg.BufferSize = 10
-			jobs1, jobs2 := NewStream(cfg, NewSequenceBreaker(1000)).Tee()
+			jobs1, jobs2 := NewStream(cfg, NewSequenceBreaker(100)).Tee()
 			var amount1 int64
 			var amount2 int64
 			j1 := jobs1.Apply(func(j *wfl.Job) *wfl.Job {
@@ -193,14 +193,14 @@ var _ = Describe("Jstream", func() {
 
 		It("should be possible to MultiSync() a single stream", func() {
 			cfg.BufferSize = 10
-			jobs1 := NewStream(cfg, NewSequenceBreaker(1000))
+			jobs1 := NewStream(cfg, NewSequenceBreaker(100))
 			syncedStreams := jobs1.MultiSync()
 			Ω(len(syncedStreams)).Should(BeNumerically("==", 1))
 			syncedStreams[0].Collect()
 		})
 
 		It("should be possible to Join() two streams", func() {
-			s1, s2 := NewStream(cfg, NewSequenceBreaker(1000)).Tee()
+			s1, s2 := NewStream(cfg, NewSequenceBreaker(100)).Tee()
 			s1.Join(s2)
 			j1 := s1.Collect()
 			j2 := s2.Collect()
@@ -254,7 +254,7 @@ var _ = Describe("Jstream", func() {
 				Workflow: nil,
 				Template: nil,
 			}
-			stream := NewStream(config, NewSequenceBreaker(100))
+			stream := NewStream(config, NewSequenceBreaker(10))
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).ShouldNot(BeNil())
 			Ω(stream.HasError()).Should(BeTrue())
@@ -263,7 +263,7 @@ var _ = Describe("Jstream", func() {
 				Workflow: wfl.NewWorkflow(wfl.NewProcessContext()),
 				Template: nil,
 			}
-			stream = NewStream(config, NewSequenceBreaker(100))
+			stream = NewStream(config, NewSequenceBreaker(10))
 			Ω(stream).ShouldNot(BeNil())
 			Ω(stream.Error()).ShouldNot(BeNil())
 			Ω(stream.HasError()).Should(BeTrue())

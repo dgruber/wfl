@@ -30,7 +30,7 @@ jobs:
           command: go test -v
       - run: 
           name: Run jstream tests
-          command: go test -v ./jstream
+          command: go test -v -timeout 20m ./jstream
       - run: 
           name: Build all examples using wfl itself
           command: cd test && go run test.go
