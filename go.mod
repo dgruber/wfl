@@ -8,7 +8,7 @@ replace (
 
 require (
 	github.com/dgruber/drmaa2interface v1.0.2
-	github.com/dgruber/drmaa2os v0.3.14
+	github.com/dgruber/drmaa2os v0.3.15
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/mitchellh/copystructure v1.1.1
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
