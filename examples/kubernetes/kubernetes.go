@@ -11,7 +11,9 @@ import (
 
 func main() {
 
-	// open a connection to the Kubernetes cluster
+	// Open a connection to the Kubernetes cluster. Use busybox as
+	// default image for methods which do not specify container image.
+	// Otherwise use _JobCategory_ to override image.
 	flow := wfl.NewWorkflow(kubernetes.NewKubernetesContextByCfg(
 		kubernetes.Config{
 			DefaultImage: "busybox:latest", // default container image Run() is using
@@ -41,6 +43,7 @@ func main() {
 	}
 
 	// Example 2:
+	// ----------
 	// Staging data into a job as file and fetch the output of the job
 	// through the JobInfo object.
 
