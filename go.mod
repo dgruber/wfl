@@ -7,8 +7,10 @@ replace (
 )
 
 require (
+	github.com/deepmap/oapi-codegen v1.8.1 // indirect
 	github.com/dgruber/drmaa2interface v1.0.2
 	github.com/dgruber/drmaa2os v0.3.18
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/mitchellh/copystructure v1.1.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0

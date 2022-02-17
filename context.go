@@ -12,7 +12,9 @@ import (
 
 	// we need to load all the packages for which context creation function
 	// are provided so that the code gets registered in the init() functions.
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+
 	// need to run Init() to have capabilities available
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 )
@@ -104,6 +106,27 @@ func NewProcessContextByCfgWithInitParams(cfg ProcessConfig, initParams simpletr
 		cfg.DBFile = TmpFile()
 	}
 	sm, err := drmaa2os.NewDefaultSessionManagerWithParams(initParams, cfg.DBFile)
+	return &Context{
+		SM:              sm,
+		DefaultTemplate: cfg.DefaultTemplate,
+		CtxCreationErr:  err}
+}
+
+type RemoteConfig struct {
+	LocalDBFile string // job session DB file
+	// DefaultTemplate contains the default job submission settings if
+	// not overridden by the RunT() like methods.
+	DefaultTemplate drmaa2interface.JobTemplate
+}
+
+// NewRemoteContext creates a wfl Context for executing jobs through
+// a remote connection. The details of the server must be provided in
+// the initParams.
+func NewRemoteContext(cfg RemoteConfig, initParams *client.ClientTrackerParams) *Context {
+	if cfg.LocalDBFile == "" {
+		cfg.LocalDBFile = TmpFile()
+	}
+	sm, err := drmaa2os.NewRemoteSessionManager(*initParams, cfg.LocalDBFile)
 	return &Context{
 		SM:              sm,
 		DefaultTemplate: cfg.DefaultTemplate,
