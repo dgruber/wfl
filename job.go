@@ -250,15 +250,21 @@ func (j *Job) RunArrayT(begin, end, step, maxParallel int, jt drmaa2interface.Jo
 
 // Do executes a function which gets the DRMAA2 job object as parameter.
 // This allows working with the low-level DRMAA2 job object.
-// Does not work with Job Arrays. (TODO execute on all job array tasks)
+// In case of an array job submit the function is called on each
+// job in the job array.
 func (j *Job) Do(f func(job drmaa2interface.Job)) *Job {
 	j.begin(j.ctx, fmt.Sprintf("Do(%s)",
 		runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()),
 	)
-	job, _, err := j.jobCheck()
+	job, arrayjob, err := j.jobCheck()
 	// do not store error as it overrides job action errors
 	if err == nil && job != nil {
 		f(job)
+	} else if err == nil && arrayjob != nil {
+		// execute function on each job array task
+		for _, arrayjobtask := range arrayjob.GetJobs() {
+			f(arrayjobtask)
+		}
 	} else {
 		j.errorf(j.ctx,
 			"Do(): Function (%s) is not executed as task is nil",
@@ -529,11 +535,18 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 	for i := 0; i < amount || amount == -1; i++ {
 		for _, task := range j.tasklist {
 			wait(task)
-			if task.job.GetState() == drmaa2interface.Failed {
+			if task.job != nil && task.job.GetState() == drmaa2interface.Failed {
 				failedJobID := task.job.GetID()
 				replaceTask(j, task)
 				j.warningf(j.ctx, "RetryAnyFailed(%d)): Task %s failed. Retry task (%s).",
 					amount, failedJobID, task.job.GetID())
+			}
+			if task.jobArray != nil {
+				for _, job := range task.jobArray.GetJobs() {
+					if job.GetState() == drmaa2interface.Failed {
+						fmt.Printf("warning: cannot retry failed job array task %s\n", job.GetID())
+					}
+				}
 			}
 		}
 		if !j.HasAnyFailed() {
@@ -552,6 +565,11 @@ func (j *Job) ReapAll() *Job {
 	for _, task := range j.tasklist {
 		if task.job != nil {
 			task.job.Reap()
+		}
+		if task.jobArray != nil {
+			for _, job := range task.jobArray.GetJobs() {
+				job.Reap()
+			}
 		}
 	}
 	return j

@@ -50,6 +50,9 @@ test/cloudfoundry
 alpine.simg
 defaultTemplate
 
+job.db
+server.crt
+server.key
 1.db
 2.db
 tmp2.db
