@@ -1,3 +1,5 @@
+💙💛
+
 # wfl - A Simple and Pluggable Workflow Language for Go
 
 _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
