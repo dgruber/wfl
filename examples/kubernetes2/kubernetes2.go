@@ -12,11 +12,7 @@ import (
 
 func main() {
 
-	flow := wfl.NewWorkflow(kubernetes.NewKubernetesContextByCfg(
-		kubernetes.Config{
-			DefaultImage: "busybox:latest", // default container image Run() is using
-			Namespace:    "default",        // must not be set as this is the default setting
-		}))
+	flow := getKubernetesWorkflow()
 
 	fmt.Println("Submitting a batch job to Kubernetes")
 
@@ -65,4 +61,12 @@ func main() {
 
 	fmt.Println("Removing job objects from Kubernetes")
 	job.ReapAll()
+}
+
+func getKubernetesWorkflow() *wfl.Workflow {
+	return wfl.NewWorkflow(kubernetes.NewKubernetesContextByCfg(
+		kubernetes.Config{
+			DefaultImage: "busybox:latest", // default container image Run() is using
+			Namespace:    "default",        // must not be set as this is the default setting
+		}))
 }

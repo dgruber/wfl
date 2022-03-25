@@ -20,8 +20,8 @@ func main() {
 			Namespace:    "default",        // must not be set as this is the default setting
 		}))
 
-	fmt.Println("Submitting 5 sleep batch jobs to Kubernetes")
-	job := flow.Run("/bin/sh", "-c", `exit $(($RANDOM%2))`).Resubmit(1)
+	fmt.Println("Submitting batch jobs to Kubernetes")
+	job := flow.Run("/bin/sh", "-c", `exit $(($RANDOM%2))`).Resubmit(4)
 
 	// for more flexibility you can use RunT() with all what the DRMAA2
 	// job template for Kubernetes offers (see https://github.com/dgruber/drmaa2os)
@@ -39,7 +39,7 @@ func main() {
 				failed.GetID(), jinfo.ExitStatus)
 		}
 	} else {
-		fmt.Println("All 5 sleep jobs finished successfully")
+		fmt.Println("All jobs finished successfully")
 	}
 
 	// Example 2:
@@ -63,6 +63,6 @@ func main() {
 		}
 	}
 
-	fmt.Println("Removing job objects from Kubernetes")
+	fmt.Println("Removing job objects (jobs with pods, configmaps) from Kubernetes")
 	job.ReapAll()
 }
