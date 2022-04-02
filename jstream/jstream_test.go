@@ -3,15 +3,16 @@ package jstream_test
 import (
 	. "github.com/dgruber/wfl/jstream"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
-	"github.com/dgruber/wfl"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/wfl"
 )
 
 func createCoroutineCounter(max *int) JobMap {

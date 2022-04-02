@@ -2,9 +2,11 @@ package wfl_test
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dgruber/wfl"
-	. "github.com/onsi/ginkgo"
+	"github.com/dgruber/wfl/pkg/log"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"os"
@@ -15,6 +17,8 @@ import (
 type testLogger struct {
 	errors int
 }
+
+func (tl *testLogger) SetLogLevel(log.LogLevel) {}
 
 func (tl *testLogger) Begin(ctx context.Context, f string) {}
 
@@ -145,7 +149,9 @@ var _ = Describe("Workflow", func() {
 
 		It("should list jobs", func() {
 			flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(
-				wfl.ProcessConfig{},
+				wfl.ProcessConfig{
+					DBFile: "tmp.db",
+				},
 			))
 
 			jobs := flow.ListJobs()
@@ -156,6 +162,9 @@ var _ = Describe("Workflow", func() {
 			Ω(job.LastError()).Should(BeNil())
 
 			jobs = flow.ListJobs()
+			for _, j := range jobs {
+				fmt.Printf("jobs: %v\n", j.JobID())
+			}
 			Ω(len(jobs)).Should(BeNumerically("==", 1))
 			Ω(jobs[0].JobInfo().ID).ShouldNot(Equal(""))
 		})

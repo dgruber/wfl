@@ -8,23 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	logLevelEnv  string = "WFL_LOGLEVEL"
-	debugLevel   string = "DEBUG"
-	infoLevel    string = "INFO"
-	warningLevel string = "WARNING"
-	errorLevel   string = "ERROR"
-	noneLevel    string = "NONE"
-)
-
-// Logger defines all methods required by an logger.
-type Logger interface {
-	Begin(ctx context.Context, f string)
-	Infof(ctx context.Context, s string, args ...interface{})
-	Warningf(ctx context.Context, s string, args ...interface{})
-	Errorf(ctx context.Context, s string, args ...interface{})
-}
-
 // DefaultLogger is the logger used when no other is specified.
 type DefaultLogger struct {
 	log *logrus.Logger
@@ -32,18 +15,18 @@ type DefaultLogger struct {
 
 func getDefaultLoggerLevel() logrus.Level {
 	switch strings.ToUpper(os.Getenv(logLevelEnv)) {
-	case debugLevel:
+	case string(DebugLevel):
 		return logrus.DebugLevel
-	case infoLevel:
+	case string(InfoLevel):
 		return logrus.InfoLevel
-	case warningLevel:
+	case string(WarningLevel):
 		return logrus.WarnLevel
-	case errorLevel:
+	case string(ErrorLevel):
 		return logrus.ErrorLevel
-	case noneLevel:
+	case string(NoneLevel):
 		return logrus.PanicLevel
 	}
-	return logrus.ErrorLevel
+	return logrus.WarnLevel
 }
 
 // NewDefaultLogger creates the default logger with settings
@@ -60,22 +43,40 @@ func NewDefaultLogger() *DefaultLogger {
 	}
 }
 
+func SetLevel(level LogLevel) {
+	switch level {
+	case DebugLevel:
+		logrus.SetLevel(logrus.DebugLevel)
+	case InfoLevel:
+		logrus.SetLevel(logrus.InfoLevel)
+	case WarningLevel:
+		logrus.SetLevel(logrus.WarnLevel)
+	case ErrorLevel:
+		logrus.SetLevel(logrus.ErrorLevel)
+	case NoneLevel:
+		logrus.SetLevel(logrus.PanicLevel)
+	}
+}
+
 // Infof is used for logging at info level.
 func (dl *DefaultLogger) Infof(ctx context.Context, s string, args ...interface{}) {
 	dl.log.Infof(s, args...)
 }
 
-// Warningf is used for logging at info level.
+// Warningf is used for warning at info level.
 func (dl *DefaultLogger) Warningf(ctx context.Context, s string, args ...interface{}) {
-	dl.log.Infof(s, args...)
+	dl.log.Warnf(s, args...)
 }
 
-// Errorf is used for logging at info level.
+// Errorf is used for errorf at info level.
 func (dl *DefaultLogger) Errorf(ctx context.Context, s string, args ...interface{}) {
 	dl.log.Errorf(s, args...)
 }
 
 // Begin writes a default log at the begining of a function.
 func (dl *DefaultLogger) Begin(ctx context.Context, f string) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	dl.Infof(ctx, "Entry: %s", f)
 }

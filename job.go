@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
@@ -31,6 +32,7 @@ type task struct {
 // job session (logical separation of jobs) of the underlying backend.
 // The Job object allows to create an manage tasks.
 type Job struct {
+	sync.Mutex
 	wfl       *Workflow
 	tasklist  []*task
 	tag       string
@@ -179,9 +181,13 @@ func (j *Job) JobInfos() []drmaa2interface.JobInfo {
 // Run submits a task which executes the given command and args. The command
 // needs to be available on the execution backend.
 func (j *Job) Run(cmd string, args ...string) *Job {
+	// protect job context
+	j.Lock()
+	defer j.Unlock()
 	j.begin(j.ctx, fmt.Sprintf("Run(%s, %v)", cmd, args))
 	jt := drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args}
-	return j.RunT(jt)
+	job := j.RunT(jt)
+	return job
 }
 
 // RunT submits a task given specified with the JobTemplate.
@@ -544,7 +550,7 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 			if task.jobArray != nil {
 				for _, job := range task.jobArray.GetJobs() {
 					if job.GetState() == drmaa2interface.Failed {
-						fmt.Printf("warning: cannot retry failed job array task %s\n", job.GetID())
+						j.warningf(j.ctx, "cannot retry failed job array task %s\n", job.GetID())
 					}
 				}
 			}
@@ -631,7 +637,9 @@ func (j *Job) Then(f func(job drmaa2interface.Job)) *Job {
 // the given command as new task.
 func (j *Job) ThenRun(cmd string, args ...string) *Job {
 	j.begin(j.ctx, "ThenRun()")
-	return j.Wait().Run(cmd, args...)
+	job := j.Wait()
+	job = job.Run(cmd, args...)
+	return job
 }
 
 // ThenRunT waits until the previous task is terminated and then executes
