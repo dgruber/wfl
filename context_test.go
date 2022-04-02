@@ -6,7 +6,7 @@ import (
 	"github.com/dgruber/wfl/pkg/context/docker"
 	"github.com/dgruber/wfl/pkg/context/kubernetes"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"os"

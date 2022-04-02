@@ -22,28 +22,29 @@ type Workflow struct {
 // Internally it creates a DRMAA2 JobSession which is used for separating jobs.
 func NewWorkflow(context *Context) *Workflow {
 	var err error
+	logger, _ := log.NewZerologger()
 	if context == nil {
-		err = errors.New("No context given")
+		err = errors.New("no context given")
 	} else if context.SM == nil {
-		err = errors.New("No Session Manager available in context")
+		err = errors.New("no Session Manager available in context")
 	} else {
 		js, errJS := context.SM.CreateJobSession("wfl", "")
 		if errJS != nil {
 			var errOpenJS error
 			if js, errOpenJS = context.SM.OpenJobSession("wfl"); errOpenJS != nil {
 				err = fmt.Errorf("error creating (%v) or opening (%v) Job Session \"wfl\"",
-					errJS.Error(), errOpenJS.Error())
+					errJS, errOpenJS)
 			}
 		}
 		return &Workflow{ctx: context,
 			js:                    js,
 			workflowCreationError: err,
-			log:                   log.NewDefaultLogger(),
+			log:                   logger,
 		}
 	}
 	return &Workflow{ctx: nil,
 		workflowCreationError: err,
-		log:                   log.NewDefaultLogger(),
+		log:                   logger,
 	}
 }
 
@@ -52,12 +53,22 @@ func (w *Workflow) Logger() log.Logger {
 	return w.log
 }
 
-// SetLogger sets a new logger for the workflow. Note that
-// nil loggers are not accepted.
+// SetLogger sets a new logger for the workflow which writes
+// processes internal log messages. Note that nil loggers are
+// not accepted.
+//
+// Example: w.SetLogger(log.NewKlogLogger("INFO"))
 func (w *Workflow) SetLogger(log log.Logger) *Workflow {
 	if log != nil {
 		w.log = log
 	}
+	return w
+}
+
+// SetLogLevel changes the log level filter for the workflow.
+// The default log level is log.Warning.
+func (w *Workflow) SetLogLevel(logLevel log.LogLevel) *Workflow {
+	w.log.SetLogLevel(logLevel)
 	return w
 }
 
@@ -85,13 +96,24 @@ func (w *Workflow) HasError() bool {
 // Run submits the first task in the workflow and returns the Job object.
 // Same as NewJob(w).Run().
 func (w *Workflow) Run(cmd string, args ...string) *Job {
-	return NewJob(w).Run(cmd, args...)
+	job := NewJob(w)
+	// as we call Run() from workflow wrapper we need to set
+	// logging depth for indicating calling function name
+	// one level deeper
+	job.ctx = context.WithValue(job.ctx, "log-depth", 4)
+	job.Run(cmd, args...)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 3)
+	return job
 }
 
 // RunT submits the first task in the workflow and returns the Job object.
 // Same as NewJob(w).RunT().
 func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
-	return NewJob(w).RunT(jt)
+	job := NewJob(w)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 4)
+	job.RunT(jt)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 3)
+	return job
 }
 
 // RunArrayJob executes the given command multiple times as specified with begin,
@@ -100,13 +122,23 @@ func (w *Workflow) RunT(jt drmaa2interface.JobTemplate) *Job {
 // parallel if supported by the context. The process context sets the TASK_ID env
 // variable to the task ID.
 func (w *Workflow) RunArrayJob(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
-	return NewJob(w).RunArray(begin, end, step, maxParallel, cmd, args...)
+	job := NewJob(w)
+	// klog prints the line of code which called RunArrayJob()
+	job.ctx = context.WithValue(job.ctx, "log-depth", 4)
+	job.RunArray(begin, end, step, maxParallel, cmd, args...)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 3)
+	return job
 }
 
 // RunArrayJob executes the given job defined in the JobTemplate multiple times.
 // See RunArrayJob().
 func (w *Workflow) RunArrayJobT(begin, end, step, maxParallel int, jt drmaa2interface.JobTemplate) *Job {
-	return NewJob(w).RunArrayT(begin, end, step, maxParallel, jt)
+	job := NewJob(w)
+	// klog prints the line of code which called RunArrayJobT()
+	job.ctx = context.WithValue(job.ctx, "log-depth", 4)
+	job.RunArrayT(begin, end, step, maxParallel, jt)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 3)
+	return job
 }
 
 // ListJobs returns all jobs visible in the workflow (i.e. available
@@ -131,6 +163,7 @@ func (w *Workflow) ListJobs() []*Job {
 		}
 		jobs = append(jobs,
 			&Job{
+				ctx: context.Background(),
 				wfl: w,
 				tasklist: []*task{{
 					job:                             d2job,

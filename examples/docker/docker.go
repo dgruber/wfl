@@ -33,9 +33,9 @@ func main() {
 	sleep := drmaa2interface.JobTemplate{
 		//JobName:        "unique",
 		RemoteCommand:  "/bin/sh",
-		Args:           []string{"-c", `echo sleeping $seconds second\(s\) && sleep $seconds && whoami && ls /testdir`},
-		JobCategory:    "golang:latest",                       // this is the docker image
-		OutputPath:     "/dev/stdout",                         // stdout of container (here stdout of sconsole)
+		Args:           []string{"-c", `echo sleeping $seconds second\(s\) && sleep $seconds && whoami`},
+		JobCategory:    "busybox:latest",                      // this is the docker image (must be pulled before)
+		OutputPath:     "/dev/stdout",                         // stdout of container (here stdout of console)
 		ErrorPath:      "/dev/stderr",                         // stderr of container (here stderr of console)
 		StageInFiles:   map[string]string{"/tmp": "/testdir"}, // mounts local tmp to /testdir in container
 		JobEnvironment: map[string]string{"seconds": "1"},     // environment variables set in container
