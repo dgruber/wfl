@@ -186,10 +186,13 @@ func (j *Job) errorf(ctx context.Context, s string, args ...interface{}) {
 func getJobTemplatesForMatrix(jt drmaa2interface.JobTemplate, x, y Replacement) ([]drmaa2interface.JobTemplate, error) {
 	finalJobTemplates := make([]drmaa2interface.JobTemplate, 0)
 	lx := len(x.Replacements) - 1
+	ly := len(y.Replacements) - 1
+	if (lx == -1) && (ly == -1) {
+		return nil, nil
+	}
 	if lx < 0 {
 		lx = 0
 	}
-	ly := len(y.Replacements) - 1
 	if ly < 0 {
 		ly = 0
 	}
