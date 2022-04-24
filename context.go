@@ -75,6 +75,13 @@ type ProcessConfig struct {
 	// DefaultTemplate contains the default job submission settings if
 	// not overridden by the RunT() like methods.
 	DefaultTemplate drmaa2interface.JobTemplate
+	// PersistentJobStorage keeps job state on disk. This slows down
+	// job submission but prevents waiting forever for processes which
+	// disappeard
+	PersistentJobStorage bool
+	// JobDBFile is used when PersistentJobStorage is set to true. It must
+	// be different from DBFile.
+	JobDBFile string
 }
 
 // NewProcessContext returns a new *Context which manages processes.
@@ -90,12 +97,17 @@ func NewProcessContextByCfg(cfg ProcessConfig) *Context {
 	if cfg.DBFile == "" {
 		cfg.DBFile = TmpFile()
 	}
+	var jobDB string
+	if cfg.PersistentJobStorage && cfg.JobDBFile == "" {
+		// we need job state DB along with job session DB
+		jobDB = TmpFile()
+	}
 	return NewProcessContextByCfgWithInitParams(ProcessConfig{
 		DBFile:          cfg.DBFile,
 		DefaultTemplate: cfg.DefaultTemplate},
 		simpletracker.SimpleTrackerInitParams{
-			UsePersistentJobStorage: false,
-			DBFilePath:              "",
+			UsePersistentJobStorage: cfg.PersistentJobStorage,
+			DBFilePath:              jobDB,
 		})
 }
 

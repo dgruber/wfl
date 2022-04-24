@@ -141,6 +141,15 @@ func (w *Workflow) RunArrayJobT(begin, end, step, maxParallel int, jt drmaa2inte
 	return job
 }
 
+func (w *Workflow) RunMatrixT(jt drmaa2interface.JobTemplate, x, y Replacement) *Job {
+	job := NewJob(w)
+	// klog prints the line of code which called RunArrayJobT()
+	job.ctx = context.WithValue(job.ctx, "log-depth", 4)
+	job.RunMatrixT(jt, x, y)
+	job.ctx = context.WithValue(job.ctx, "log-depth", 3)
+	return job
+}
+
 // ListJobs returns all jobs visible in the workflow (i.e. available
 // in the underlying drmaa2session). It may wrap one task in one Job
 // object and return multiple Job objects even when only one Job with
@@ -182,4 +191,10 @@ func (w *Workflow) ListJobs() []*Job {
 	}
 
 	return jobs
+}
+
+// NewJob creates a new empty Job object for the given workflow.
+// Equivalent to NewJob(*Workflow).
+func (w *Workflow) NewJob() *Job {
+	return NewJob(w)
 }

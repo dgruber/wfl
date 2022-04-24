@@ -220,6 +220,42 @@ var _ = g.Describe("JobHelp", func() {
 
 		})
 
+		g.It("should return a list of generated job templates", func() {
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "{{cmd}}",
+				Args:          []string{"{{arg1}}"},
+			}
+
+			x := Replacement{
+				Fields:       []JobTemplateField{RemoteCommand, Args},
+				Pattern:      "{{cmd}}",
+				Replacements: []string{"/bin/sleep", "sleep"},
+			}
+
+			y := Replacement{
+				Fields:       []JobTemplateField{Args},
+				Pattern:      "{{arg1}}",
+				Replacements: []string{"1", "2", "3"},
+			}
+
+			jobTemplates, err := getJobTemplatesForMatrix(jt, x, y)
+			Expect(err).To(BeNil())
+			Expect(jobTemplates).To(HaveLen(6))
+			Expect(jobTemplates[0].RemoteCommand).To(Equal("/bin/sleep"))
+			Expect(jobTemplates[0].Args[0]).To(Equal("1"))
+			Expect(jobTemplates[1].RemoteCommand).To(Equal("/bin/sleep"))
+			Expect(jobTemplates[1].Args[0]).To(Equal("2"))
+			Expect(jobTemplates[2].RemoteCommand).To(Equal("/bin/sleep"))
+			Expect(jobTemplates[2].Args[0]).To(Equal("3"))
+			Expect(jobTemplates[3].RemoteCommand).To(Equal("sleep"))
+			Expect(jobTemplates[3].Args[0]).To(Equal("1"))
+			Expect(jobTemplates[4].RemoteCommand).To(Equal("sleep"))
+			Expect(jobTemplates[4].Args[0]).To(Equal("2"))
+			Expect(jobTemplates[5].RemoteCommand).To(Equal("sleep"))
+			Expect(jobTemplates[5].Args[0]).To(Equal("3"))
+		})
+
 	})
 
 })

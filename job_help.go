@@ -3,8 +3,10 @@ package wfl
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/wfl/pkg/matrix"
 	"github.com/mitchellh/copystructure"
 )
 
@@ -179,4 +181,57 @@ func (j *Job) errorf(ctx context.Context, s string, args ...interface{}) {
 		return
 	}
 	j.wfl.log.Errorf(ctx, s, args...)
+}
+
+func getJobTemplatesForMatrix(jt drmaa2interface.JobTemplate, x, y Replacement) ([]drmaa2interface.JobTemplate, error) {
+	finalJobTemplates := make([]drmaa2interface.JobTemplate, 0)
+	lx := len(x.Replacements) - 1
+	if lx < 0 {
+		lx = 0
+	}
+	ly := len(y.Replacements) - 1
+	if ly < 0 {
+		ly = 0
+	}
+	position := []int{0, 0}
+
+	for {
+		var replacementX string
+		var replacementY string
+
+		if position[0] < len(x.Replacements) {
+			replacementX = x.Replacements[position[0]]
+		}
+		if position[1] < len(y.Replacements) {
+			replacementY = y.Replacements[position[1]]
+		}
+
+		newJT, err := matrix.CopyJobTemplate(jt)
+		if err != nil {
+			return nil, fmt.Errorf("error copying job template: %s", err)
+		}
+		var errRepl error
+
+		for _, field := range x.Fields {
+			newJT, errRepl = matrix.ReplaceInField(newJT, string(field), x.Pattern, replacementX)
+			if errRepl != nil {
+				return nil, errRepl
+			}
+		}
+		for _, field := range y.Fields {
+			newJT, errRepl = matrix.ReplaceInField(newJT, string(field), y.Pattern, replacementY)
+			if errRepl != nil {
+				return nil, errRepl
+			}
+		}
+		// submit new job
+		finalJobTemplates = append(finalJobTemplates, newJT)
+
+		position, err = matrix.GetNextValue([]int{lx, ly}, position)
+		if err != nil {
+			break
+		}
+	}
+
+	return finalJobTemplates, nil
 }

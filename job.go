@@ -191,7 +191,13 @@ func (j *Job) Run(cmd string, args ...string) *Job {
 }
 
 // RunT submits a task given specified with the JobTemplate.
-func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
+func (j *Job) RunT(t drmaa2interface.JobTemplate) *Job {
+	jobTemplateCopy, err := copystructure.Copy(t)
+	if err != nil {
+		j.errorf(j.ctx, "could not copy job template: %v", err)
+	}
+	jt := jobTemplateCopy.(drmaa2interface.JobTemplate)
+
 	j.begin(j.ctx, fmt.Sprintf("RunT(%s, %v)", jt.RemoteCommand, jt.Args))
 	if err := j.checkCtx(); err != nil {
 		j.lastError = err
@@ -208,9 +214,9 @@ func (j *Job) RunT(jt drmaa2interface.JobTemplate) *Job {
 		j.lastError = errors.New("JobSession is nil")
 		return j
 	}
+	jobTemplate, _ := copystructure.Copy(jt)
 	job, err := j.wfl.js.RunJob(jt)
 	j.lastError = err
-	jobTemplate, _ := copystructure.Copy(jt)
 	j.tasklist = append(j.tasklist, &task{job: job, submitError: err,
 		template: jobTemplate.(drmaa2interface.JobTemplate)})
 	return j
@@ -251,6 +257,116 @@ func (j *Job) RunArrayT(begin, end, step, maxParallel int, jt drmaa2interface.Jo
 	jobTemplate, _ := copystructure.Copy(jt)
 	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
 		template: jobTemplate.(drmaa2interface.JobTemplate)})
+	return j
+}
+
+type JobTemplateField string
+
+const (
+	RemoteCommand     JobTemplateField = "RemoteCommand"
+	Args              JobTemplateField = "Args"
+	SubmitAsHold      JobTemplateField = "SubmitAsHold"
+	ReRunnable        JobTemplateField = "ReRunnable"
+	JobEnvironment    JobTemplateField = "JobEnvironment"
+	WorkingDirectory  JobTemplateField = "WorkingDirectory"
+	JobCategory       JobTemplateField = "JobCategory"
+	Email             JobTemplateField = "Email"
+	EmailOnStarted    JobTemplateField = "EmailOnStarted"
+	EmailOnTerminated JobTemplateField = "EmailOnTerminated"
+	JobName           JobTemplateField = "JobName"
+	InputPath         JobTemplateField = "InputPath"
+	OutputPath        JobTemplateField = "OutputPath"
+	ErrorPath         JobTemplateField = "ErrorPath"
+	JoinFiles         JobTemplateField = "JoinFiles"
+	ReservationID     JobTemplateField = "ReservationID"
+	QueueName         JobTemplateField = "QueueName"
+	MinSlots          JobTemplateField = "MinSlots"
+	MaxSlots          JobTemplateField = "MaxSlots"
+	Priority          JobTemplateField = "Priority"
+	CandidateMachines JobTemplateField = "CandidateMachines"
+	MinPhysMemory     JobTemplateField = "MinPhysMemory"
+	MachineOS         JobTemplateField = "MachineOS"
+	MachineArch       JobTemplateField = "MachineArch"
+	StartTime         JobTemplateField = "StartTime"
+	DeadlineTime      JobTemplateField = "DeadlineTime"
+	StageInFiles      JobTemplateField = "StageInFiles"
+	StageOutFiles     JobTemplateField = "StageOutFiles"
+	ResourceLimits    JobTemplateField = "ResourceLimits"
+	AccountingID      JobTemplateField = "AccountingID"
+)
+
+// Replacement defines the fields and the values to be replaced in the
+// workflow JobTemplate. The len(Replacement) defines how many job
+// templates are generated for this replacement instruction.
+type Replacement struct {
+	// Fields are JobTemplate field names which are evaluated for
+	// the pattern to get replaced. Special fields are:
+	// - allStrings - all fields which are strings, string slices,
+	// or string maps are going to be searched for the pattern
+	// which is then replaced by one of the replacements.
+	Fields []JobTemplateField
+	// Pattern defines a string in the job template which is going to be
+	// replaced by the value of the replacement string.
+	Pattern string
+	// Replacements defines all values the Pattern is going to be replaced
+	// in the job template. For each replacement a new job template is
+	// created and submitted.
+	Replacements []string
+}
+
+// RunMatrixT executes the job defined in a JobTemplate exactly
+// len(x.Replacement)*len(y.Replacement) times. It generates a
+// new job template for each combination of replacements executed
+// from x and y on the given JobTemplate.
+//
+// Example: Submit two different commands (sleep 1 and sleep 2)
+// in two different container images, having 4 jobs in total
+// submitted.
+//
+// j.RunMatrixT(drmaa2interface.JobTemplate{
+// 		JobCategory: "{{image}}",
+// 		RemoteCommand: "sleep",
+// 		Args: []string{"{{arg}}",
+// 	}, wfl.Replacement{
+// 		Fields: []string{"JobCategory"},
+// 		Pattern: "{{image}}",
+// 		Replacements: []string{"busybox:latest", "golang:latest"},
+// 	}, wfl.Replacement{
+// 		Fields: []string{"Args"},
+// 		Pattern: "{{arg}}",
+// 		Replacements: []string{"1", "2"},
+// 	}).WaitAll()
+func (j *Job) RunMatrixT(jt drmaa2interface.JobTemplate, x, y Replacement) *Job {
+	j.begin(j.ctx, fmt.Sprintf("RunMatrix(%v, %v, %v)", jt, x, y))
+	if err := j.checkCtx(); err != nil {
+		j.errorf(j.ctx, "RunMatrix context check failed: %v", err)
+		j.lastError = err
+		return j
+	}
+	jtCopy, err := copystructure.Copy(jt)
+	if err != nil {
+		j.errorf(j.ctx, "RunMatrix copystructure failed: %v", err)
+		j.lastError = err
+		return j
+	}
+	jobTemplate := jtCopy.(drmaa2interface.JobTemplate)
+	jts, err := getJobTemplatesForMatrix(jobTemplate, x, y)
+	if err != nil {
+		j.errorf(j.ctx, "creating job templates failed: %v", err)
+		j.lastError = err
+		return j
+	}
+	// submit jobs for all job templates
+	for _, jt := range jts {
+		j.infof(j.ctx, "submitting job template: %v", jt)
+		j = j.RunT(jt)
+		if j.Errored() {
+			err = j.lastError
+			j.errorf(j.ctx, "submitting job template failed: %v", err)
+			j.lastError = err
+			return j
+		}
+	}
 	return j
 }
 
@@ -448,7 +564,7 @@ func wait(task *task) {
 		}
 		task.terminationError = waitArrayJobTerminated(task.jobArray)
 		task.terminated = true
-		// TODO chache job info
+		// TODO cache job info
 		return
 	}
 	task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
@@ -504,13 +620,14 @@ func (j *Job) Retry(r int) *Job {
 func (j *Job) Synchronize() *Job {
 	j.begin(j.ctx, "Synchronize()")
 	for _, task := range j.tasklist {
+		j.infof(j.ctx, fmt.Sprintf("Synchronize() wait for job %s", task.job.GetID()))
 		wait(task)
 	}
 	return j
 }
 
 // ListAllFailed returns all tasks which failed as array of DRMAA2 jobs. Note that
-// it implicitly waits until all tasks are finished.
+// it implicitly blocks and waits until all tasks are finished.
 func (j *Job) ListAllFailed() []drmaa2interface.Job {
 	j.begin(j.ctx, "ListAllFailed()")
 	failed := make([]drmaa2interface.Job, 0, len(j.tasklist))
@@ -524,6 +641,39 @@ func (j *Job) ListAllFailed() []drmaa2interface.Job {
 		}
 	}
 	return failed
+}
+
+// ListAll returns all tasks as slice of DRMAA2 jobs. If there
+// is no task the function returns an empty slice.
+func (j *Job) ListAll() []drmaa2interface.Job {
+	j.begin(j.ctx, "ListAll()")
+	all := make([]drmaa2interface.Job, 0, len(j.tasklist))
+	for _, task := range j.tasklist {
+		if task.job == nil {
+			continue
+		}
+		all = append(all, task.job)
+	}
+	return all
+}
+
+// ForAll executes a user defined function for each task of the job.
+// The function has an interface as input parameter which can be
+// used to pass additional data into or out of the function as a
+// result (like a pointer to a struct or pointer to an output slice).
+func (j *Job) ForAll(f func(drmaa2interface.Job, interface{}) error, params interface{}) error {
+	j.begin(j.ctx, "ForAll()")
+	for _, task := range j.tasklist {
+		if task.job == nil {
+			continue
+		}
+		ferr := f(task.job, params)
+		if ferr != nil {
+			j.warningf(j.ctx, "ForAll(): aborting - user defined function errored: %v", ferr)
+			return ferr
+		}
+	}
+	return nil
 }
 
 // HasAnyFailed returns true if there is any failed task in the chain.
