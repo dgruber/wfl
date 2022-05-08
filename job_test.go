@@ -81,9 +81,9 @@ var _ = Describe("Job", func() {
 			job := wf.Run("sleep", "1")
 			Ω(job).ShouldNot(BeNil())
 			job.Suspend()
-			Ω(job.State()).Should(Equal(drmaa2interface.Suspended))
+			Ω(job.State().String()).Should(Equal(drmaa2interface.Suspended.String()))
 			job.Resume()
-			Ω(job.State()).Should(Equal(drmaa2interface.Running))
+			Ω(job.State().String()).Should(Equal(drmaa2interface.Running.String()))
 			job.Wait()
 			Ω(job.Success()).Should(BeTrue())
 		})
@@ -375,6 +375,17 @@ var _ = Describe("Job", func() {
 			job.ReapAll()
 		})
 
+		It("should list all tasks as DRMAA2 jobs", func() {
+			job := wf.Run("sleep", "0.1").
+				Run("sleep", "0.1").
+				Run("sleep", "0.1").
+				Run("sleep", "0.1").
+				Run("sleep", "0.1")
+			jobs := job.ListAll()
+			Expect(len(jobs)).Should(BeNumerically("==", 5))
+			job.ReapAll()
+		})
+
 		Context("JobInfo related functions", func() {
 			It("should return a JobInfo on success", func() {
 				ji := wf.Run("sleep", "0").Wait().JobInfo()
@@ -423,6 +434,107 @@ var _ = Describe("Job", func() {
 			Ω(job.Success()).Should(BeFalse())
 		})
 
+	})
+
+	Context("Job Matrix", func() {
+
+		var (
+			flow              *wfl.Workflow
+			getRemoteCommands func(drmaa2interface.Job, interface{}) error
+		)
+
+		BeforeEach(func() {
+			flow = makeWfl()
+
+			// Function which copies the remote command from the
+			// job's job template to the interface which is expected
+			// to be a pointer to a string slice (cmdList).
+			getRemoteCommands = func(j drmaa2interface.Job, i interface{}) error {
+				output := i.(*[]string)
+				jt, err := j.GetJobTemplate()
+				if err != nil {
+					return err
+				}
+				*output = append(*output, jt.RemoteCommand)
+				return nil
+			}
+		})
+
+		It("should run a job matrix", func() {
+			job := flow.NewJob().RunMatrixT(
+				drmaa2interface.JobTemplate{
+					RemoteCommand: "{{cmd}}",
+					Args:          []string{"{{arg}}"},
+				},
+				wfl.Replacement{
+					Fields:       []wfl.JobTemplateField{wfl.RemoteCommand},
+					Pattern:      "{{cmd}}",
+					Replacements: []string{"sleep", "echo"},
+				},
+				wfl.Replacement{
+					Fields:       []wfl.JobTemplateField{wfl.Args},
+					Pattern:      "{{arg}}",
+					Replacements: []string{"0.1", "0.2"},
+				},
+			)
+			// there should be no submission errors
+			Expect(job.Errored()).Should(BeFalse())
+			// wait for all jobs finished
+			job.Synchronize()
+			Expect(job.HasAnyFailed()).Should(BeFalse())
+			jis := job.JobInfos()
+			Expect(jis).NotTo(BeNil())
+			Expect(len(jis)).Should(BeNumerically("==", 4))
+
+			// get all job template commands
+			cmdList := make([]string, 0, 4)
+			Expect(job.ForAll(getRemoteCommands, &cmdList)).To(Succeed())
+			Expect(cmdList).To(ConsistOf("sleep", "echo", "sleep", "echo"))
+
+		})
+
+		It("should run a job matrix with only one dimension", func() {
+			job := flow.NewJob().RunMatrixT(
+				drmaa2interface.JobTemplate{
+					RemoteCommand: "sleep",
+					Args:          []string{"{{arg}}"},
+				},
+				wfl.Replacement{
+					Fields:       []wfl.JobTemplateField{wfl.Args},
+					Pattern:      "{{arg}}",
+					Replacements: []string{"0.1", "0.2", "0.3"},
+				},
+				wfl.Replacement{}, // leave empty
+			)
+
+			// there should be no submission errors
+			Expect(job.Errored()).Should(BeFalse())
+			// wait for all jobs finished
+			job.Synchronize()
+			Expect(job.HasAnyFailed()).Should(BeFalse())
+			jis := job.JobInfos()
+			Expect(jis).NotTo(BeNil())
+			Expect(len(jis)).Should(BeNumerically("==", 3))
+		})
+
+		It("should run nothing when no replacements are specified", func() {
+			job := flow.NewJob().RunMatrixT(
+				drmaa2interface.JobTemplate{
+					RemoteCommand: "sleep",
+					Args:          []string{"1"},
+				},
+				wfl.Replacement{}, // leave empty
+				wfl.Replacement{}, // leave empty
+			)
+			// there should be no submission errors
+			Expect(job.Errored()).Should(BeFalse())
+			// wait for all jobs finished
+			job.Synchronize()
+			Expect(job.HasAnyFailed()).Should(BeFalse())
+			jis := job.JobInfos()
+			Expect(jis).NotTo(BeNil())
+			Expect(len(jis)).Should(BeNumerically("==", 0))
+		})
 	})
 
 	Context("Basic error cases", func() {

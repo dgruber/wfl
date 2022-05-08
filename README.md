@@ -17,7 +17,7 @@ operating systems, Docker, Singularity, Kubernetes, Cloud Foundry, and HPC job s
 a tedios. Lots of repeating code is required. All workload management systems have a
 different API.
 
-_wfl_ abstracts away from the underlying details of the processes, containers, and 
+_wfl_ abstracts away from the underlying details of the processes, containers, and
 workload management systems. _wfl_ provides a simple, unified interface which allows
 to quickly define and execute a job workflow and change between different execution
 backends without changing the workflow itself.
@@ -186,8 +186,8 @@ out the go drmaa project for finding the right flags.
 
 For building SLURM requires:
 
-	export CGO_LDFLAGS="-L$SLURM_DRMAA_ROOT/lib"
-	export CGO_CFLAGS="-DSLURM -I$SLURM_DRMAA_ROOT/include"
+    export CGO_LDFLAGS="-L$SLURM_DRMAA_ROOT/lib"
+    export CGO_CFLAGS="-DSLURM -I$SLURM_DRMAA_ROOT/include"
 
 If all set a libdrmaa context can be created by importing:
 
@@ -200,8 +200,8 @@ set of submission parameters. A basic example is [here](https://github.com/dgrub
 
 ## Workflow
 
-A workflow encapsulates a set of jobs using the same backend (context). Depending on the execution
-backend it can be seen as a namespace. 
+A workflow encapsulates a set of jobs/tasks using the same backend (context). Depending on the execution
+backend it can be seen as a namespace.
 
 It can be created by using:
 
@@ -225,32 +225,49 @@ or with
 
 ## Job
 
-Jobs are the main objects in _wfl_. A job defines helper methods. Many of them return the job object itself to allow chaining calls in an easy way. A job can also be seen as a container and control unit for tasks. Tasks are often mapped to jobs of the underlying
-workload manager (like in Kubernetes, HPC schedulers etc.).
+Jobs are the main objects in _wfl_. A job defines helper methods for dealing with the workload. Many of those methods return the job object itself to allow chaining calls in an easy way. Errors are stored internally and
+can be fetched with special methods. A job is as a container and control unit for tasks. Tasks are mapped in most cases to jobs of the underlying workload manager (like in Kubernetes, HPC schedulers etc.) or
+raw processes or containers.
+
+The _Run()_ method submits a new task and returns immeadiately, i.e. not waiting for the job to be started
+or finished. When the _Run()_ method errors the job submission has failed. The _Wait()_ method waits until the task has been finished. If multiple _Run()_ methods are called in a chain, multiple tasks might be executed
+in parallel (depending on the backend). When the same task should be executed multiple times
+the _RunArray()_ method might be convinient. When using a HPC workload manager using the
+LibDRMAA implementation it gets translated to an array job, which is used for submitting
+and running 10s of thousands of tasks in an HPC clusters (like for bioinformatics or for
+electronic design automation workloads). Each task gets an unqiue task number set as environment
+variable. This is used for accessing specific data sets.
+
+The method _RunMatrixT()_ allows to submit and run multiple tasks based on a job template
+with placeholders. Those placeholders get replaced with defined values before jobs get submitted.
+That allows to submit many tasks using different job templates in a convinient way
+(like for executing a range of commands in a set of different container images for testing).
 
 In some systems it is required to delete job related resources after the job is finished
 and no more information needs to be queried about its execution. This functionality is
-implemented in the DRMAA2 Reap() method which can be executed by ReapAll() for each
+implemented in the DRMAA2 _Reap()_ method which can be executed by _ReapAll()_ for each
 task in the job object. Afterwards the job object should not be used anymore as some
-information might not be available anymore.
+information might not be available anymore. In a Kubernetes environment it removes
+the job objects and potentially related objects like configmaps.
 
 Methods can be classified in blocking, non-blocking, job template based, function based, and error handlers.
 
 ### Job Submission
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
-|  Run() |  Starts a process, container, or submits a task and comes back immediately | no | | 
+| -- | -- | -- | -- |
+|  Run() |  Starts a process, container, or submits a task and comes back immediately | no | |
 |  RunT() |  Like above but with a JobTemplate as parameter | no | |
 |  RunArray() | Submits a bulk job which runs many iterations of the same command | no | |
-|  Resubmit() | Submits a job _n_-times (Run().Run().Run()...) | no | | 
+|  Resubmit() | Submits a job _n_-times (Run().Run().Run()...) | no | |
 |  RunEvery() | Submits a task every d _time.Duration_ | yes | |
 |  RunEveryT() | Like _RunEvery()_ but with JobTemplate as param | yes | |
+|  RunMatrixT() | Replaces placeholders in the job template and submits combinations | no | |
 
 ### Job Control
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
+| -- | -- | -- | -- |
 | Suspend() | Stops a task from execution (e.g. sending SIGTSTP to the process group)... | | |
 | Resume()|  Continues a task (e.g. sending SIGCONT)... | | |
 | Kill() | Stops process (SIGKILL), container, task, job immediately. | | |
@@ -258,27 +275,28 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 ### Function Execution
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
+| -- | -- | -- | -- |
 | Do() | Executes a Go function | yes | |
 | Then() | Waits for end of process and executes a Go function | yes | |
 | OnSuccess() | Executes a function if the task run successfully (exit code 0)  | yes | |
 | OnFailure() | Executes a function if the task failed (exit code != 0)  | yes | |
 | OnError() | Executes a function if the task could not be created  | yes | |
+| ForAll(f, interface{}) | Executes a user defined function on all tasks | no | |
 
 ### Blocker
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
-| After() | Blocks a specific amount of time and continues | yes | | 
+| -- | -- | -- | -- |
+| After() | Blocks a specific amount of time and continues | yes | |
 | Wait() | Waits until the task submitted latest finished | yes | |
 | Synchronize() | Waits until all submitted tasks finished | yes | |
 
 ### Job Flow Control
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
-| ThenRun() | Wait() (last task finished) followed by an async Run() | partially | | 
-| ThenRunT() | ThenRun() with template | partially | | 
+| -- | -- | -- | -- |
+| ThenRun() | Wait() (last task finished) followed by an async Run() | partially | |
+| ThenRunT() | ThenRun() with template | partially | |
 | OnSuccessRun() | Wait() if Success() then Run() | partially | |
 | OnSuccessRunT() | OnSuccessRun() but with template as param | partially | |
 | OnFailureRun() | Wait() if Failed() then Run() | partially | |
@@ -289,17 +307,19 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 ### Job Status and General Checks
 
 | Function Name | Purpose | Blocking | Examples |
-| -- | -- | -- | -- | 
+| -- | -- | -- | -- |
 | JobID() | Returns the ID of the submitted job | no | |
 | JobInfo() | Returns the DRMAA2 JobInfo of the job  | no | |
-| Template() |   | no | | 
-| State() |   | no | | 
-| LastError() |   | no | | 
-| Failed() |   | no | | 
-| Success() |   | no | | 
+| Template() |   | no | |
+| State() |   | no | |
+| LastError() |   | no | |
+| Failed() |   | no | |
+| Success() |   | no | |
 | ExitStatus() |   | no | |
 | ReapAll() | Cleans up all job related resources from the workload manager. Do not
 use the job object afterwards. Calls DRMAA2 Reap() on all tasks. | no | |
+| ListAllFailed() | Waits for all tasks and returns the failed tasks as DRMAA2 jobs | yes | |
+| ListAll() | Returns all tasks as a slice of DRMAA2 jobs | no | |
 
 ## JobTemplate
 
@@ -376,13 +396,13 @@ Jobs allow the execution of workload as well as expressing dependencies.
 
 The line above executes two OS processes sequentially and waits until the last job in chain is finished.
 
-In the following example the two sleep processes are executed in parallel. _Wait()_ only waitf for the sleep 1 job. Hence sleep 2 still runs after the wait call comes back.
+In the following example the two sleep processes are executed in parallel. _Wait()_ only waits for the sleep 1 job. Hence sleep 2 still runs after the wait call comes back!
 
 ```go
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("sleep", "2").Run("sleep", "1").Wait()
 ```
 
-Running two jobs in parallel and waiting until all jobs finished can be done _Synchronize()_.
+Running two jobs in parallel and waiting until _all jobs_ finished can be done with _Synchronize()_.
 
 ```go
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("sleep", "2").Run("sleep", "1").Synchronize()
@@ -407,6 +427,39 @@ In order to run jobs depending on the exit status the _OnFailure_ and _OnSuccess
 ```
 
 For executing a function on a submission error _OnError()_ can be used.
+
+For running multiple jobs on a similar job template (like for test workflows) the _RunMatrixT()_
+can be used. It expects a _JobTemplate_ with self-defined placeholders (can be any string).
+Those placeholders are getting replaced by the lists specified in the Replacements structs.
+Then any combination of the replacement lists are evaluated and new job templates are generated
+and submitted.
+
+The following example submits and waits for 4 tasks:
+
+* sleep 0.1
+* echo 0.1
+* sleep 0.2
+* echo 0.2
+
+```go
+job := flow.NewJob().RunMatrixT(
+				drmaa2interface.JobTemplate{
+					RemoteCommand: "{{cmd}}",
+					Args:          []string{"{{arg}}"},
+				},
+				wfl.Replacement{
+					Fields:       []string{wfl.RemoteCommand},
+					Pattern:      "{{cmd}}",
+					Replacements: []string{"sleep", "echo"},
+				},
+				wfl.Replacement{
+					Fields:       []string{wfl.Args},
+					Pattern:      "{{arg}}",
+					Replacements: []string{"0.1", "0.2"},
+				},
+			)
+job.Synchronize()
+```
 
 More methods can be found in the sources.
 
