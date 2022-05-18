@@ -441,6 +441,10 @@ The following example submits and waits for 4 tasks:
 * sleep 0.2
 * echo 0.2
 
+If only a list of replacements is required then the second replacement can just
+left empty (_wfl.Replacement{}_). For _JobTemplate_ fields with numbers the replacement
+strings are automatically converted to numbers.
+
 ```go
 job := flow.NewJob().RunMatrixT(
 				drmaa2interface.JobTemplate{
@@ -448,12 +452,14 @@ job := flow.NewJob().RunMatrixT(
 					Args:          []string{"{{arg}}"},
 				},
 				wfl.Replacement{
-					Fields:       []string{wfl.RemoteCommand},
+					Fields:       []wfl.JobTemplateField{{wfl.RemoteCommand},
+
 					Pattern:      "{{cmd}}",
 					Replacements: []string{"sleep", "echo"},
 				},
 				wfl.Replacement{
-					Fields:       []string{wfl.Args},
+					Fields:       []wfl.JobTemplateField{{wfl.Args},
+
 					Pattern:      "{{arg}}",
 					Replacements: []string{"0.1", "0.2"},
 				},
