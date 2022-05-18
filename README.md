@@ -453,11 +453,13 @@ job := flow.NewJob().RunMatrixT(
 				},
 				wfl.Replacement{
 					Fields:       []wfl.JobTemplateField{{wfl.RemoteCommand},
+
 					Pattern:      "{{cmd}}",
 					Replacements: []string{"sleep", "echo"},
 				},
 				wfl.Replacement{
 					Fields:       []wfl.JobTemplateField{{wfl.Args},
+
 					Pattern:      "{{arg}}",
 					Replacements: []string{"0.1", "0.2"},
 				},
