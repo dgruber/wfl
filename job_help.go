@@ -54,6 +54,12 @@ func mergeJobTemplateWithDefaultTemplate(req, def drmaa2interface.JobTemplate) d
 	req.StageInFiles = mergeStringMap(req.StageInFiles, def.StageInFiles)
 	// join enviroment variables
 	req.JobEnvironment = mergeStringMap(req.JobEnvironment, def.JobEnvironment)
+	if def.MinSlots > 0 && req.MinSlots == 0 {
+		req.MinSlots = def.MinSlots
+	}
+	if def.MaxSlots > 0 && req.MaxSlots == 0 {
+		req.MaxSlots = def.MaxSlots
+	}
 	// TODO implement more when required
 	return req
 }
