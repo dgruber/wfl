@@ -132,8 +132,12 @@ github.com/dgruber/drmaa2interface v1.0.2 h1:mMJomhR+knWLQpfy+5S9nXaPXyt+4eUQyly
 github.com/dgruber/drmaa2interface v1.0.2/go.mod h1:ZLCB+IrYXy351GOoF9C5aT3lHjfi6D8W6rOeapuCdiM=
 github.com/dgruber/drmaa2os v0.3.22 h1:2dggc0TvEnQ6+uW3mhQV1lOsmmi8N/aEJ6koxeYQHXw=
 github.com/dgruber/drmaa2os v0.3.22/go.mod h1:EqgxOy6VfYHKTv3w0z2qmfeslY8Up/zew7kBeLcfd14=
+github.com/dgruber/drmaa2os v0.3.23-0.20220809134423-2718e260006e h1:zgPOb7Fpj27IXgtGh5/Tbltb6WHO8YtAHTn5XoGWcLg=
+github.com/dgruber/drmaa2os v0.3.23-0.20220809134423-2718e260006e/go.mod h1:EqgxOy6VfYHKTv3w0z2qmfeslY8Up/zew7kBeLcfd14=
 github.com/dgruber/gcpbatchtracker v0.0.0-20220802110212-be6d200401eb h1:KUSnKoAZKLT+5l0sBFccnGmV+7l3niXDHjKyhh615aI=
 github.com/dgruber/gcpbatchtracker v0.0.0-20220802110212-be6d200401eb/go.mod h1:APRUdSi+2lXHZElf3bVJ/mJoIWR8o9y/Va13270SJfI=
+github.com/dgruber/gcpbatchtracker v0.0.0-20220805063248-7ca9880dc641 h1:0zx/a5z0MDJFOIK8Xhpls0RfrZgI+uoGBJCXq+NvFH4=
+github.com/dgruber/gcpbatchtracker v0.0.0-20220805063248-7ca9880dc641/go.mod h1:APRUdSi+2lXHZElf3bVJ/mJoIWR8o9y/Va13270SJfI=
 github.com/docker/distribution v2.8.1+incompatible h1:Q50tZOPR6T/hjNsyc9g8/syEs6bk8XXApsHjKukMl68=
 github.com/docker/distribution v2.8.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/docker v20.10.14+incompatible h1:+T9/PRYWNDo5SZl5qS1r9Mo/0Q8AwxKKPtu9S1yxM0w=

@@ -424,7 +424,7 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should run a bunch of jobs", func() {
-			job := flow.RunArrayJob(1, 10, 1, 5, "sleep", "0").Wait()
+			job := flow.RunArrayJob(1, 10, 1, 5, "sleep", "1").Wait()
 			Ω(job.Success()).Should(BeTrue())
 		})
 

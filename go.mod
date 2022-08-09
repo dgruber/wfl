@@ -8,8 +8,8 @@ replace (
 require (
 	github.com/deepmap/oapi-codegen v1.10.1
 	github.com/dgruber/drmaa2interface v1.0.2
-	github.com/dgruber/drmaa2os v0.3.22
-	github.com/dgruber/gcpbatchtracker v0.0.0-20220802110212-be6d200401eb
+	github.com/dgruber/drmaa2os v0.3.23-0.20220809134423-2718e260006e
+	github.com/dgruber/gcpbatchtracker v0.0.0-20220805063248-7ca9880dc641
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/onsi/ginkgo/v2 v2.1.4
