@@ -28,7 +28,7 @@ jobs:
       #    command: go get -v -t -d ./...
       - run: 
           name: Run main tests
-          command: env GO111MODULE=off go install github.com/onsi/ginkgo/ginkgo && ginkgo -a -v
+          command: go test -v
       - run: 
           name: Build all examples using wfl itself
           command: cd test && go run test.go
