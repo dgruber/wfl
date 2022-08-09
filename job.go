@@ -238,7 +238,13 @@ func (j *Job) RunArray(begin, end, step, maxParallel int, cmd string, args ...st
 	jt := drmaa2interface.JobTemplate{RemoteCommand: cmd, Args: args}
 	job, err := j.wfl.js.RunBulkJobs(jt, begin, end, step, maxParallel)
 	j.lastError = err
-	jobTemplate, _ := copystructure.Copy(jt)
+	jobTemplate, copyErr := copystructure.Copy(jt)
+	if copyErr != nil {
+		j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
+			template: jobTemplate.(drmaa2interface.JobTemplate)})
+		j.errorf(j.ctx, "could not copy job template: %v", copyErr)
+		return j
+	}
 	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
 		template: jobTemplate.(drmaa2interface.JobTemplate)})
 	return j
