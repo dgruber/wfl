@@ -13,8 +13,8 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 > like Kubernetes or Docker when not using them.
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
-operating systems, Docker, Singularity, Kubernetes, Cloud Foundry, and HPC job schedulers can be
-a tedios. Lots of repeating code is required. All workload management systems have a
+operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers 
+can be a tedios. Lots of repeating code is required. All workload management systems have a
 different API.
 
 _wfl_ abstracts away from the underlying details of the processes, containers, and
@@ -137,6 +137,22 @@ then the _ContextByCfg()_ can be called.
 ```go
     docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
 ```
+
+For running jobs either in VMs or in containers in Google Batch the _GoogleBatchContext_ needs to be allocated:
+
+```go
+    googlebatch.NewGoogleBatchContextByCfg(
+		googlebatch.Config{
+			DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
+			GoogleProjectID:    "google-project",
+			Region:             "europe-north1",
+			DefaultTemplate: drmaa2interface.JobTemplate{
+				MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
+				MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
+			},
+		})
+```  
+
 
 When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContext_ can be used:
 
