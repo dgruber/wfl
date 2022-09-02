@@ -14,7 +14,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
 operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers 
-can be a tedios. Lots of repeating code is required. All workload management systems have a
+can be a tedious. Lots of repeating code is required. All workload management systems have a
 different API.
 
 _wfl_ abstracts away from the underlying details of the processes, containers, and
