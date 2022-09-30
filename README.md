@@ -7,11 +7,6 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 [![CircleCI](https://circleci.com/gh/dgruber/wfl/tree/master.svg?style=svg)](https://circleci.com/gh/dgruber/wfl/tree/master)
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
-> _Update_: In order to reflect the underlying drmaa2os changes which separates
-> different backends more clearly some context creation functions are moved
-> to pkg/context. That avoids having to deal with dependencies from bigger libraries
-> like Kubernetes or Docker when not using them.
-
 Creating process, container, pod, task, or job workflows based on raw interfaces of
 operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers 
 can be a tedious. Lots of repeating code is required. All workload management systems have a
@@ -87,7 +82,7 @@ _wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
 management - moving results from one job to another. That's deliberately not implemented. But 
-some backend implementations (like for Kubernetes) support basic filetransfer in the
+some backend implementations (like for Kubernetes) support basic file transfer in the
 _JobTemplate_ (when using _RunT()_) using the _StageInFiles_ and _StageOutFiles_ maps.
 On large scale you are missing checkpoint and restart functionality or HA of the workflow 
 process itself. Here the idea is not to require any complicated runtime environment
@@ -118,7 +113,7 @@ A context defines the execution backend for the workflow. Contexts can be easily
 with the _New_ functions which are defined in the _context.go_ file or in the separate
 packages found in _pkg/context_.
 
-For creating a context which executes the jobs of a workflow in operating system processses use:
+For creating a context which executes the jobs of a workflow in operating system processes use:
 
 ```go
     wfl.NewProcessContext()
@@ -199,7 +194,7 @@ to be [build](https://github.com/natefoo/slurm-drmaa).
 Since C go is used under the hood (drmaa2os which uses go drmaa) some compiler flags needs
 to be set during build time. Those flags depend on the workload manager used. Best check
 out the go drmaa project for finding the right flags.
-
+immeadiately
 For building SLURM requires:
 
     export CGO_LDFLAGS="-L$SLURM_DRMAA_ROOT/lib"
@@ -211,7 +206,7 @@ If all set a libdrmaa context can be created by importing:
    ctx := libdrmaa.NewLibDRMAAContext()
 ```
 
-The JobCategory is whatever the workloadmanager associates with it. Typically it is a
+The JobCategory is whatever the workload-manager associates with it. Typically it is a
 set of submission parameters. A basic example is [here](https://github.com/dgruber/wfl/blob/master/examples/libdrmaa/libdrmaa.go).
 
 ## Workflow
@@ -245,18 +240,18 @@ Jobs are the main objects in _wfl_. A job defines helper methods for dealing wit
 can be fetched with special methods. A job is as a container and control unit for tasks. Tasks are mapped in most cases to jobs of the underlying workload manager (like in Kubernetes, HPC schedulers etc.) or
 raw processes or containers.
 
-The _Run()_ method submits a new task and returns immeadiately, i.e. not waiting for the job to be started
+The _Run()_ method submits a new task and returns immediately, i.e. not waiting for the job to be started
 or finished. When the _Run()_ method errors the job submission has failed. The _Wait()_ method waits until the task has been finished. If multiple _Run()_ methods are called in a chain, multiple tasks might be executed
 in parallel (depending on the backend). When the same task should be executed multiple times
-the _RunArray()_ method might be convinient. When using a HPC workload manager using the
+the _RunArray()_ method might be convenient. When using a HPC workload manager using the
 LibDRMAA implementation it gets translated to an array job, which is used for submitting
 and running 10s of thousands of tasks in an HPC clusters (like for bioinformatics or for
-electronic design automation workloads). Each task gets an unqiue task number set as environment
+electronic design automation workloads). Each task gets an unique task number set as environment
 variable. This is used for accessing specific data sets.
 
 The method _RunMatrixT()_ allows to submit and run multiple tasks based on a job template
 with placeholders. Those placeholders get replaced with defined values before jobs get submitted.
-That allows to submit many tasks using different job templates in a convinient way
+That allows to submit many tasks using different job templates in a convenient way
 (like for executing a range of commands in a set of different container images for testing).
 
 In some systems it is required to delete job related resources after the job is finished
@@ -360,7 +355,7 @@ For examples please have a look into the examples directory. [template](https://
 all examples with the local go compiler and then within a Docker container using the _golang:latest_ image
 and reports errors.
 
-[cloudfoundry](https://github.com/dgruber/wfl/blob/master/examples/cloudfoundry/cloudfoundry.go) demonstrates how a Cloud Foundry taks can be created.
+[cloudfoundry](https://github.com/dgruber/wfl/blob/master/examples/cloudfoundry/cloudfoundry.go) demonstrates how a Cloud Foundry tasks can be created.
 
 [Singularity containers](https://github.com/dgruber/wfl/blob/master/examples/singularity/singularity.go) can also be created which is helpful when managing a simple Singularity _wfl_ container workflow within a single HPC job either to fully exploit all resources and reduce the amount of HPC jobs.
 
@@ -489,7 +484,7 @@ More methods can be found in the sources.
 
 ### Sequence
 
-The successor task runs after the completion of the pre-decessor task.
+The successor task runs after the completion of the predecessor task.
 
 ```go
     flow := wfl.NewWorkflow(ctx)
