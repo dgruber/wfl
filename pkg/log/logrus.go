@@ -73,7 +73,7 @@ func (dl *DefaultLogger) Errorf(ctx context.Context, s string, args ...interface
 	dl.log.Errorf(s, args...)
 }
 
-// Begin writes a default log at the begining of a function.
+// Begin writes a default log at the beginning of a function.
 func (dl *DefaultLogger) Begin(ctx context.Context, f string) {
 	if ctx == nil {
 		ctx = context.Background()

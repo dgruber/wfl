@@ -163,7 +163,7 @@ var _ = g.Describe("JobHelp", func() {
 			Ω(jt.CandidateMachines).ShouldNot(BeNil())
 			Ω(jt.CandidateMachines).Should(ContainElement("Shadows - Edwin Oosterwald Dub"))
 
-			// candidate machines should be completely overriden
+			// candidate machines should be completely overridden
 			Ω(jt.CandidateMachines).ShouldNot(ContainElement("the Dø"))
 		})
 	})

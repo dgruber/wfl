@@ -224,7 +224,7 @@ func (j *Job) RunT(t drmaa2interface.JobTemplate) *Job {
 
 // RunArray executes the given command multiple times. If begin is set to 1
 // end to 10, and step to 1, it executes the command 10 times. Each job run
-// gets a different internal array job task ID enviornment variable set
+// gets a different internal array job task ID environment variable set
 // which depends on the backend. The maxParallel parameter is respected
 // only by some backends. It restricts the parallel execution to that amount
 // of commands at any given time. If set to 1 it forces sequential execution.
@@ -561,7 +561,7 @@ func (j *Job) After(d time.Duration) *Job {
 }
 
 func wait(task *task) {
-	if task.terminated == true {
+	if task.terminated {
 		return
 	}
 	if task.job == nil {

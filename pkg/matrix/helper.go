@@ -59,7 +59,7 @@ func ReplaceInField(jt drmaa2interface.JobTemplate, fieldName, pattern, replacem
 
 	switch jtField.Kind() {
 	case reflect.String:
-		// for string fields replace each occurence of the pattern (RemoteCommand: app_{{1}} -> app_X)
+		// for string fields replace each occurrence of the pattern (RemoteCommand: app_{{1}} -> app_X)
 		v := strings.Replace(jtField.String(), pattern, replacement, -1)
 		jtField.SetString(v)
 	case reflect.Bool:
@@ -78,7 +78,7 @@ func ReplaceInField(jt drmaa2interface.JobTemplate, fieldName, pattern, replacem
 		}
 		jtField.SetInt(int64(i))
 	case reflect.Slice:
-		// for slice fields replace each occurence of the pattern
+		// for slice fields replace each occurrence of the pattern
 		if jtField.Len() > 0 {
 			if jtField.Index(0).Kind() != reflect.String {
 				return jt, fmt.Errorf("field %s is not a string slice", fieldName)
@@ -90,7 +90,7 @@ func ReplaceInField(jt drmaa2interface.JobTemplate, fieldName, pattern, replacem
 			jtField.Set(reflect.ValueOf(v))
 		}
 	case reflect.Map:
-		// for map fields replace each occurence of the pattern found in any key
+		// for map fields replace each occurrence of the pattern found in any key
 		// or value. Expects a map of strings.
 		iter := jtField.MapRange()
 		m := map[string]string{}

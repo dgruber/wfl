@@ -97,7 +97,7 @@ func (kl *Klog) Errorf(ctx context.Context, s string, args ...interface{}) {
 	klog.ErrorDepth(getLogDepth(ctx), fmt.Sprintf(s, args...))
 }
 
-// Begin writes a default log at the begining of a function.
+// Begin writes a default log at the beginning of a function.
 func (kl *Klog) Begin(ctx context.Context, f string) {
 	if kl.logLevelThreshold > 1 {
 		return

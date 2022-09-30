@@ -2,10 +2,11 @@ package jstream
 
 import (
 	"errors"
+	"sync"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
 	"github.com/mitchellh/copystructure"
-	"sync"
 )
 
 // JobMap takes a job and returns a job. Input job and
@@ -341,7 +342,7 @@ func (g *Stream) Filter(filter Filter) *Stream {
 	return &Stream{jch: outch, config: g.config}
 }
 
-// JobChannel retuns the job channel of the job stream
+// JobChannel returns the job channel of the job stream
 // for direct processing.
 func (g *Stream) JobChannel() chan *wfl.Job {
 	return g.jch

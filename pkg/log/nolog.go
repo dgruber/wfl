@@ -34,7 +34,7 @@ func (l *Nolog) Errorf(ctx context.Context, s string, args ...interface{}) {
 	return
 }
 
-// Begin writes a default log at the begining of a function.
+// Begin writes a default log at the beginning of a function.
 func (l *Nolog) Begin(ctx context.Context, f string) {
 	return
 }

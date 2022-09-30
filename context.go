@@ -77,7 +77,7 @@ type ProcessConfig struct {
 	DefaultTemplate drmaa2interface.JobTemplate
 	// PersistentJobStorage keeps job state on disk. This slows down
 	// job submission but prevents waiting forever for processes which
-	// disappeard
+	// disappeared
 	PersistentJobStorage bool
 	// JobDBFile is used when PersistentJobStorage is set to true. It must
 	// be different from DBFile.
@@ -181,7 +181,7 @@ func NewSingularityContext() *Context {
 // NewSingularityContextByCfg creates a new Context which allows to run
 // the jobs in Singularit containers. If the given SingularityConfig
 // has set the DefaultImage to valid Singularity image then the Run()
-// methods are using that container image. That image can be overriden
+// methods are using that container image. That image can be overridden
 // by the RunT() method when setting the JobCategory.
 func NewSingularityContextByCfg(cfg SingularityConfig) *Context {
 	if cfg.DBFile == "" {

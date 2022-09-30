@@ -52,7 +52,7 @@ func mergeJobTemplateWithDefaultTemplate(req, def drmaa2interface.JobTemplate) d
 	}
 	// join files to stage
 	req.StageInFiles = mergeStringMap(req.StageInFiles, def.StageInFiles)
-	// join enviroment variables
+	// join environment variables
 	req.JobEnvironment = mergeStringMap(req.JobEnvironment, def.JobEnvironment)
 	if def.MinSlots > 0 && req.MinSlots == 0 {
 		req.MinSlots = def.MinSlots
