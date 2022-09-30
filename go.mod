@@ -1,5 +1,8 @@
 module github.com/dgruber/wfl
 
+// security patches of dependencies
+require github.com/labstack/echo/v4 v4.9.0 // indirect
+
 replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.5.13
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4

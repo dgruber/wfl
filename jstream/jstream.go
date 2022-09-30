@@ -49,10 +49,7 @@ func (g *Stream) OnError(f func(e error)) *Stream {
 }
 
 func (g *Stream) HasError() bool {
-	if g.err != nil {
-		return true
-	}
-	return false
+	return g.err != nil
 }
 
 // Error returns the error of the last operation.
@@ -170,9 +167,9 @@ func (g *Stream) MultiSync(s ...*Stream) []*Stream {
 		index := i
 		go func() {
 			for job := range s[index].jch {
-				outs[i] <- job.Synchronize()
+				outs[index] <- job.Synchronize()
 			}
-			close(outs[i])
+			close(outs[index])
 		}()
 	}
 
@@ -199,9 +196,10 @@ func (g *Stream) Merge(s ...*Stream) *Stream {
 			wg.Done()
 		}()
 		for _, is := range s {
+			stream := is
 			wg.Add(1)
 			go func() {
-				for job := range is.jch {
+				for job := range stream.jch {
 					jobs <- job
 				}
 				wg.Done()
@@ -228,7 +226,8 @@ func (g *Stream) apply(apply JobMap, maxParallel int) *Stream {
 
 	go func() {
 		var wg sync.WaitGroup
-		for job := range g.jch {
+		for j := range g.jch {
+			job := j
 			if throttle > 0 {
 				coroutineControl <- true // block when coroutineControl buffer is full
 			}
