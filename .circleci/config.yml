@@ -7,7 +7,7 @@ jobs:
     resource_class: large
     docker:
       # specify the version
-      - image: circleci/golang:latest
+      - image: cimg/go:1.20
       
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images

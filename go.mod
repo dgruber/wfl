@@ -1,5 +1,7 @@
 module github.com/dgruber/wfl
 
+go 1.18
+
 // security patches of dependencies
 require github.com/labstack/echo/v4 v4.10.2 // indirect
 
@@ -119,4 +121,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-go 1.19
+
