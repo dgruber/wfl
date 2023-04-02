@@ -92,7 +92,7 @@ var _ = Describe("Job", func() {
 			job := wf.Run("sleep", "1")
 			Ω(job).ShouldNot(BeNil())
 			job.Kill()
-			Ω(job.State()).Should(Equal(drmaa2interface.Failed))
+			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))
 		})
 
 		It("should retry a failed job", func() {
@@ -432,6 +432,19 @@ var _ = Describe("Job", func() {
 			job := flow.RunArrayJob(1, 10, 1, 5, "/bin/bash", "-c", "exit 77").Wait()
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))
 			Ω(job.Success()).Should(BeFalse())
+		})
+
+		It("should run a bunch of jobs with a job template", func() {
+			job := flow.NewJob().RunArrayT(1, 10, 1, 5, drmaa2interface.JobTemplate{
+				RemoteCommand: "sleep",
+				Args:          []string{"0"},
+			}).Wait()
+			Ω(job.JobID()).ShouldNot(Equal(""))
+			Ω(job.Success()).Should(BeTrue())
+			Ω(job.Template().RemoteCommand).Should(Equal("sleep"))
+			Ω(job.ReapAll().Errored()).Should(BeFalse())
+			job.ThenRunArray(1, 10, 1, 5, "sleep", "0").Wait()
+			Ω(job.Success()).Should(BeTrue())
 		})
 
 	})
