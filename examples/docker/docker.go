@@ -63,3 +63,19 @@ func main() {
 
 	job.Wait()
 }
+
+func Simple() {
+	// Create a Docker context with the "alpine" image as the default image
+	ctx := docker.NewDockerContextByCfg(docker.Config{
+		DefaultDockerImage: "alpine",
+		DefaultTemplate: drmaa2interface.JobTemplate{
+			OutputPath: "/dev/stdout",
+		},
+	})
+
+	// Create a new workflow using the Docker context
+	flow := wfl.NewWorkflow(ctx)
+
+	// Execute the "echo" command inside the Docker container and print the output to the console
+	flow.Run("echo", "Hello, Docker world!").Wait()
+}

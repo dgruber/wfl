@@ -28,12 +28,15 @@ func NewWorkflow(context *Context) *Workflow {
 	} else if context.SM == nil {
 		err = errors.New("no Session Manager available in context")
 	} else {
-		js, errJS := context.SM.CreateJobSession("wfl", "")
+		if context.JobSessionName == "" {
+			context.JobSessionName = "wfl"
+		}
+		js, errJS := context.SM.CreateJobSession(context.JobSessionName, "")
 		if errJS != nil {
 			var errOpenJS error
-			if js, errOpenJS = context.SM.OpenJobSession("wfl"); errOpenJS != nil {
-				err = fmt.Errorf("error creating (%v) or opening (%v) Job Session \"wfl\"",
-					errJS, errOpenJS)
+			if js, errOpenJS = context.SM.OpenJobSession(context.JobSessionName); errOpenJS != nil {
+				err = fmt.Errorf("error creating (%v) or opening (%v) Job Session \""+
+					context.JobSessionName+"\"", errJS, errOpenJS)
 			}
 		}
 		return &Workflow{ctx: context,

@@ -48,6 +48,7 @@ func NewGoogleBatchContextByCfg(cfg Config) *wfl.Context {
 		}, cfg.DBFile)
 	return &wfl.Context{
 		SM:                 sessionManager,
+		SMType:             wfl.GoogleBatchSessionManager,
 		DefaultDockerImage: cfg.DefaultJobCategory,
 		CtxCreationErr:     err,
 		DefaultTemplate:    cfg.DefaultTemplate,

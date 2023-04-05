@@ -63,6 +63,7 @@ func NewLibDRMAAContextByCfgWithInitParams(cfg Config, params libdrmaa.LibDRMAAS
 	sm, err := drmaa2os.NewLibDRMAASessionManagerWithParams(params, cfg.DBFile)
 	return &wfl.Context{
 		SM:              sm,
+		SMType:          wfl.LibDRMAASessionManager,
 		DefaultTemplate: cfg.DefaultTemplate,
 		CtxCreationErr:  err}
 }

@@ -33,6 +33,7 @@ func NewDockerContextByCfg(cfg Config) *wfl.Context {
 	sm, err := drmaa2os.NewDockerSessionManager(cfg.DBFile)
 	return &wfl.Context{
 		SM:                 sm,
+		SMType:             wfl.DockerSessionManager,
 		DefaultDockerImage: cfg.DefaultDockerImage,
 		CtxCreationErr:     err,
 		DefaultTemplate:    cfg.DefaultTemplate,

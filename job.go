@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"runtime"
 	"sync"
@@ -206,6 +208,10 @@ func (j *Job) RunT(t drmaa2interface.JobTemplate) *Job {
 	// merging only specific job template parameters
 	jt = mergeJobTemplateWithDefaultTemplate(jt, j.wfl.ctx.DefaultTemplate)
 
+	// replace placeholders in job template
+	jt.OutputPath = replaceNextContextID(jt.OutputPath, j.wfl.ctx)
+	jt.ErrorPath = replaceContextID(jt.ErrorPath, j.wfl.ctx)
+
 	// JobCategory overrides all at the moment...
 	if jt.JobCategory == "" {
 		jt.JobCategory = j.wfl.ctx.DefaultDockerImage
@@ -329,19 +335,19 @@ type Replacement struct {
 // in two different container images, having 4 jobs in total
 // submitted.
 //
-// j.RunMatrixT(drmaa2interface.JobTemplate{
-// 		JobCategory: "{{image}}",
-// 		RemoteCommand: "sleep",
-// 		Args: []string{"{{arg}}",
-// 	}, wfl.Replacement{
-// 		Fields: []string{"JobCategory"},
-// 		Pattern: "{{image}}",
-// 		Replacements: []string{"busybox:latest", "golang:latest"},
-// 	}, wfl.Replacement{
-// 		Fields: []string{"Args"},
-// 		Pattern: "{{arg}}",
-// 		Replacements: []string{"1", "2"},
-// 	}).WaitAll()
+//	j.RunMatrixT(drmaa2interface.JobTemplate{
+//			JobCategory: "{{image}}",
+//			RemoteCommand: "sleep",
+//			Args: []string{"{{arg}}",
+//		}, wfl.Replacement{
+//			Fields: []string{"JobCategory"},
+//			Pattern: "{{image}}",
+//			Replacements: []string{"busybox:latest", "golang:latest"},
+//		}, wfl.Replacement{
+//			Fields: []string{"Args"},
+//			Pattern: "{{arg}}",
+//			Replacements: []string{"1", "2"},
+//		}).WaitAll()
 func (j *Job) RunMatrixT(jt drmaa2interface.JobTemplate, x, y Replacement) *Job {
 	j.begin(j.ctx, fmt.Sprintf("RunMatrix(%v, %v, %v)", jt, x, y))
 	if err := j.checkCtx(); err != nil {
@@ -626,6 +632,10 @@ func (j *Job) Retry(r int) *Job {
 func (j *Job) Synchronize() *Job {
 	j.begin(j.ctx, "Synchronize()")
 	for _, task := range j.tasklist {
+		if task.job == nil {
+			j.warningf(j.ctx, "Synchronize() task has no job")
+			continue
+		}
 		j.infof(j.ctx, fmt.Sprintf("Synchronize() wait for job %s", task.job.GetID()))
 		wait(task)
 	}
@@ -885,4 +895,109 @@ func (j *Job) OnError(f func(err error)) *Job {
 		f(j.lastError)
 	}
 	return j
+}
+
+// Output returns the output of the last task if it is in an end state. In case
+// of OS process backend the output is read from the file specified in the
+// JobTemplate.OutputPath. In case of other backends the output is not available.
+func (j *Job) Output() string {
+	j.infof(j.ctx, "Output()")
+
+	if j.wfl.ctx.SMType != DefaultSessionManager &&
+		j.wfl.ctx.SMType != DockerSessionManager &&
+		j.wfl.ctx.SMType != KubernetesSessionManager {
+		j.errorf(j.ctx, "Output(): not supported for backend %s", j.wfl.ctx.SMType)
+		j.lastError = errors.New("ouput not supported for this backend")
+		return ""
+	}
+
+	task := j.lastJob()
+	if task == nil || task.job == nil {
+		j.errorf(j.ctx, "Output(): no task found")
+		j.lastError = errors.New("no task found")
+		return ""
+	}
+
+	state := task.job.GetState()
+	if state == drmaa2interface.Undetermined {
+		j.errorf(j.ctx, "Output(): job state is undetermined")
+		j.lastError = errors.New("job state is undetermined")
+		return ""
+	}
+
+	err := task.job.WaitTerminated(drmaa2interface.InfiniteTime)
+	if err != nil {
+		j.errorf(j.ctx, "Output(): failed waiting for job termination: %s", err)
+		j.lastError = fmt.Errorf("failed waiting for job termination: %s", err)
+		return ""
+	}
+
+	if !isPathLocalFile(task.template.OutputPath) {
+		j.errorf(j.ctx, "Output(): output path %s is not a local file",
+			task.template.OutputPath)
+		j.lastError = fmt.Errorf("output path %s is not a local file",
+			task.template.OutputPath)
+		return ""
+	}
+
+	// for Kubernetes we need the jobinfo "output" extension
+	if j.wfl.ctx.SMType == KubernetesSessionManager {
+		ji, err := task.job.GetJobInfo()
+		if err != nil {
+			j.errorf(j.ctx, "Output(): failed getting job info: %s", err)
+			j.lastError = fmt.Errorf("failed getting job info: %s", err)
+			return ""
+		}
+		if ji.ExtensionList != nil {
+			if output, ok := ji.ExtensionList["output"]; ok {
+				if len(output) > 0 && output[len(output)-1] == '\n' {
+					output = output[:len(output)-1]
+				}
+				if len(output) > 0 && output[len(output)-1] == '\r' {
+					output = output[:len(output)-1]
+				}
+				return output
+			}
+		}
+		j.errorf(j.ctx, "Output(): no output in jobinfo")
+		j.lastError = errors.New("no output in jobinfo")
+		return ""
+	}
+
+	data, err := ioutil.ReadFile(task.template.OutputPath)
+	if err != nil {
+		j.errorf(j.ctx, "Output(): failed reading file %s: %s",
+			task.template.OutputPath, err)
+		j.lastError = fmt.Errorf("failed reading file %s: %s",
+			task.template.OutputPath, err)
+		return ""
+	}
+
+	// OS process -> the output is in the file
+	// remove trailing newline cr
+	if len(data) > 0 && data[len(data)-1] == '\n' {
+		data = data[:len(data)-1]
+	}
+	if len(data) > 0 && data[len(data)-1] == '\r' {
+		data = data[:len(data)-1]
+	}
+	return string(data)
+
+}
+
+func isPathLocalFile(path string) bool {
+	normalFile := path != "/dev/null" &&
+		path != "/dev/stdout" &&
+		path != "/dev/stderr" &&
+		path != ""
+
+	if normalFile {
+		// check if path is a file which exists with os.Stat
+		fi, err := os.Stat(path)
+		if err != nil {
+			return false
+		}
+		return !fi.IsDir()
+	}
+	return false
 }

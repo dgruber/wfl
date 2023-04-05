@@ -35,6 +35,7 @@ func NewKubernetesContextByCfg(cfg Config) *wfl.Context {
 		}, cfg.DBFile)
 	return &wfl.Context{
 		SM:                 sessionManager,
+		SMType:             wfl.KubernetesSessionManager,
 		DefaultDockerImage: cfg.DefaultImage,
 		CtxCreationErr:     err,
 		DefaultTemplate:    cfg.DefaultTemplate,

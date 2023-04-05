@@ -3,8 +3,10 @@ package wfl
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
@@ -19,14 +21,84 @@ import (
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 )
 
+type SessionManagerType int
+
+// see also drmaa2os package
+
+const (
+	// DefaultSessionManager handles jobs as processes
+	DefaultSessionManager SessionManagerType = iota
+	// DockerSessionManager manages Docker containers
+	DockerSessionManager
+	// CloudFoundrySessionManager manages Cloud Foundry application tasks
+	CloudFoundrySessionManager
+	// KubernetesSessionManager creates Kubernetes jobs
+	KubernetesSessionManager
+	// SingularitySessionManager manages Singularity containers
+	SingularitySessionManager
+	// SlurmSessionManager manages slurm jobs as cli commands
+	SlurmSessionManager
+	// LibDRMAASessionManager manages jobs through libdrmaa.so
+	LibDRMAASessionManager
+	// PodmanSessionManager manages jobs as podman containers either locally or remote
+	PodmanSessionManager
+	// RemoteSessionManager manages jobs over the network through a remote server
+	RemoteSessionManager
+	// ExternalSessionManager can be used by external JobTracker implementations
+	// during development time before they get added here
+	ExternalSessionManager
+	// GoogleBatchSessionManager manages Google Cloud Batch jobs
+	GoogleBatchSessionManager
+	// MPIOperatorSessionManager manages jobs as MPI operator jobs on Kubernetes
+	MPIOperatorSessionManager
+)
+
 // Context contains a pointer to execution backend and configuration for it.
 type Context struct {
 	CtxCreationErr     error
 	SM                 drmaa2interface.SessionManager
+	SMType             SessionManagerType
 	DefaultDockerImage string
-	// defaultTemplate contains all default settings for job submission
+	// DefaultTemplate contains all default settings for job submission
 	// which are copied (if not set) to Run() or RunT() methods
 	DefaultTemplate drmaa2interface.JobTemplate
+	// ContextTaskID is a number which is incremented for each submitted
+	// task. After incrementing and before submitting the task
+	// all occurencies of the "{{.ID}}" string in the job template
+	// are replaced by the current task ID. Following fields are
+	// evaluated: OuputPath, ErrorPath. The workflow can be started
+	// with an offset by setting the ContextTaskID to a value > 0.
+	ContextTaskID int64
+	// Mutext is used for protecting the ContextTaskID
+	sync.Mutex
+	// JobSessionName is set to "wfl" by default. It can be changed
+	// to a custom name. The name is used to create a DRMAA2 session.
+	JobSessionName string
+}
+
+func (c *Context) WithSessionName(jobSessionName string) *Context {
+	c.JobSessionName = jobSessionName
+	return c
+}
+
+func (c *Context) WithDefaultDockerImage(image string) *Context {
+	c.DefaultDockerImage = image
+	return c
+}
+
+func (c *Context) WithDefaultJobTemplate(t drmaa2interface.JobTemplate) *Context {
+	c.DefaultTemplate = t
+	return c
+}
+
+func (c *Context) GetNextContextTaskID() int64 {
+	c.Lock()
+	defer c.Unlock()
+	if c.ContextTaskID == math.MaxInt64 {
+		c.ContextTaskID = 0
+	}
+	c.ContextTaskID++
+	return c.ContextTaskID
 }
 
 // OnError executes a function when an error occurred during
@@ -120,6 +192,7 @@ func NewProcessContextByCfgWithInitParams(cfg ProcessConfig, initParams simpletr
 	sm, err := drmaa2os.NewDefaultSessionManagerWithParams(initParams, cfg.DBFile)
 	return &Context{
 		SM:              sm,
+		SMType:          DefaultSessionManager,
 		DefaultTemplate: cfg.DefaultTemplate,
 		CtxCreationErr:  err}
 }
@@ -141,6 +214,7 @@ func NewRemoteContext(cfg RemoteConfig, initParams *client.ClientTrackerParams) 
 	sm, err := drmaa2os.NewRemoteSessionManager(*initParams, cfg.LocalDBFile)
 	return &Context{
 		SM:              sm,
+		SMType:          RemoteSessionManager,
 		DefaultTemplate: cfg.DefaultTemplate,
 		CtxCreationErr:  err}
 }
@@ -150,6 +224,7 @@ func NewRemoteContext(cfg RemoteConfig, initParams *client.ClientTrackerParams) 
 func DRMAA2SessionManagerContext(sm drmaa2interface.SessionManager) *Context {
 	return &Context{
 		SM:             sm,
+		SMType:         ExternalSessionManager,
 		CtxCreationErr: nil,
 	}
 }
@@ -190,6 +265,7 @@ func NewSingularityContextByCfg(cfg SingularityConfig) *Context {
 	sm, err := drmaa2os.NewSingularitySessionManager(cfg.DBFile)
 	return &Context{
 		SM:                 sm,
+		SMType:             SingularitySessionManager,
 		DefaultDockerImage: cfg.DefaultImage,
 		CtxCreationErr:     err,
 		DefaultTemplate:    cfg.DefaultTemplate,
