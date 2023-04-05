@@ -10,6 +10,7 @@ replace (
 require (
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/dgruber/drmaa2interface v1.1.0
+	github.com/dgruber/drmaa2os v0.3.26
 	github.com/dgruber/gcpbatchtracker v0.1.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/mitchellh/copystructure v1.2.0
@@ -41,7 +42,6 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgruber/drmaa v1.0.0 // indirect
-	github.com/dgruber/drmaa2os v0.3.26-0.20230405045819-62d5d48ed9f5 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.23+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
