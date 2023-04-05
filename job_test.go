@@ -411,6 +411,22 @@ var _ = Describe("Job", func() {
 			})
 		})
 
+		It("should get the output of a job", func() {
+			os.Remove("tmp.db")
+			// for the output we need to print stdout to a file
+			flow := wfl.NewWorkflow(
+				wfl.NewProcessContext().WithDefaultJobTemplate(
+					drmaa2interface.JobTemplate{
+						OutputPath: wfl.RandomFileNameInTempDir() + "-{{.JobID}}.out",
+					},
+				))
+			Ω(flow.HasError()).Should(BeFalse())
+
+			job := flow.Run("echo", "hello world")
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Output()).Should(Equal("hello world"))
+		})
+
 	})
 
 	Context("Job Array", func() {
