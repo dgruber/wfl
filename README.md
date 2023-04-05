@@ -8,7 +8,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
-operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers 
+operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers
 can be a tedious. Lots of repeating code is required. All workload management systems have a
 different API.
 
@@ -30,14 +30,14 @@ If the output of the command needs to be displayed on the terminal you can set t
 default _JobTemplate_ (see below) configuration:
 
 ```go
-	template := drmaa2interface.JobTemplate{
-		ErrorPath:  "/dev/stderr",
-		OutputPath: "/dev/stdout",
-	}
-	flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(wfl.ProcessConfig{
-		DefaultTemplate: template,
-	}))
-	flow.Run("echo", "hello").Wait()
+ template := drmaa2interface.JobTemplate{
+  ErrorPath:  "/dev/stderr",
+  OutputPath: "/dev/stdout",
+ }
+ flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(wfl.ProcessConfig{
+  DefaultTemplate: template,
+ }))
+ flow.Run("echo", "hello").Wait()
 ```
 
 Running a job as a Docker container requires a different context (and the image
@@ -45,9 +45,9 @@ already pulled before).
 
 ```go
     import (
-	"github.com/dgruber/drmaa2interface"
-	"github.com/dgruber/wfl"
-	"github.com/dgruber/wfl/pkg/context/docker"
+ "github.com/dgruber/drmaa2interface"
+ "github.com/dgruber/wfl"
+ "github.com/dgruber/wfl/pkg/context/docker"
     )
     
     ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
@@ -81,15 +81,23 @@ _wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine 
 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
 as on a high-performance compute cluster. Things missing: On small scale you probably miss data
-management - moving results from one job to another. That's deliberately not implemented. But 
-some backend implementations (like for Kubernetes) support basic file transfer in the
+management - moving results from one job to another. That's deliberately not implemented.
+
+There is now support for getting the job output as a string back with the _Output()_
+method. It is a convenience wrapper which just reads the job output from a file which
+must be set before with _OutputPath_. Note that when having multiple tasks, they need
+to have different output paths set (hence use _RunT()_, or different flows, or try
+the new "{{.ID}}" replacement in the _OutputPath_). _Output()_ is currently implemented
+for the OS, Docker, and Kubernetes backend.
+
+Some backend implementations (like for Kubernetes) support basic file transfer in the
 _JobTemplate_ (when using _RunT()_) using the _StageInFiles_ and _StageOutFiles_ maps.
-On large scale you are missing checkpoint and restart functionality or HA of the workflow 
+On large scale you are missing checkpoint and restart functionality or HA of the workflow
 process itself. Here the idea is not to require any complicated runtime environment
 for the workflow applications rather keeping workflows small and repeatably executable
 from other workflows.
 
-_wfl_ works with simple primitives: *context*, *workflow*, *job*, and *jobtemplate*
+_wfl_ works with simple primitives: _context_, _workflow_, _job_, and _jobtemplate_
 
 Experimental: Jobs can also be processed in [job control streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
 
@@ -98,7 +106,7 @@ First support for logging is also available. Log levels can be controlled by env
 logging facility by getting the logger from the workflow (_workflow.Logger()_) or registering
 your own logger in a workflow _(workflow.SetLogger(Logger interface)_). Default is set to ERROR.
 
-### Getting Started
+## Getting Started
 
 Dependencies of _wfl_ (like drmaa2) are vendored in. The only external package required to be installed
 manually is the _drmaa2interface_.
@@ -119,13 +127,13 @@ For creating a context which executes the jobs of a workflow in operating system
     wfl.NewProcessContext()
 ```
 
-If the workflow needs to be executed in containers the _DockerContext_ can be used: 
+If the workflow needs to be executed in containers the _DockerContext_ can be used:
 
 ```go
     docker.NewDockerContext()
 ```
 
-If the Docker context needs to be configured with a default Docker image 
+If the Docker context needs to be configured with a default Docker image
 (when Run() is used or RunT() without a configured _JobCategory_ (which _is_ the Docker image))
 then the _ContextByCfg()_ can be called.
 
@@ -137,17 +145,16 @@ For running jobs either in VMs or in containers in Google Batch the _GoogleBatch
 
 ```go
     googlebatch.NewGoogleBatchContextByCfg(
-		googlebatch.Config{
-			DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
-			GoogleProjectID:    "google-project",
-			Region:             "europe-north1",
-			DefaultTemplate: drmaa2interface.JobTemplate{
-				MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
-				MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
-			},
-		})
+  googlebatch.Config{
+   DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
+   GoogleProjectID:    "google-project",
+   Region:             "europe-north1",
+   DefaultTemplate: drmaa2interface.JobTemplate{
+    MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
+    MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
+   },
+  })
 ```  
-
 
 When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContext_ can be used:
 
@@ -157,7 +164,7 @@ When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContex
 
 Without a config it uses following environment variables to access the Cloud Foundry cloud controller API:
 
-* CF_API (like https://api.run.pivotal.io)
+* CF_API (like <https://api.run.pivotal.io>)
 * CF_USER
 * CF_PASSWORD
 
@@ -177,7 +184,7 @@ job workflow it makes sense to use the Kubernetes config.
 
 [Singularity](https://en.wikipedia.org/wiki/Singularity_(software)) containers can be executed
 within the Singularity context. When setting the _DefaultImage_ (like in the Kubernetes Context)
-then then _Run()_ methods can be used otherwise the Container image must be specified in the 
+then then _Run()_ methods can be used otherwise the Container image must be specified in the
 JobTemplate's _JobCategory_ field separately for each job. The _DefaultImage_
 can always be overridden by the _JobCategory_. Note that each task / job
 executes a separate Singularity container process.
@@ -197,8 +204,10 @@ out the go drmaa project for finding the right flags.
 immeadiately
 For building SLURM requires:
 
+```bash
     export CGO_LDFLAGS="-L$SLURM_DRMAA_ROOT/lib"
     export CGO_CFLAGS="-DSLURM -I$SLURM_DRMAA_ROOT/include"
+```
 
 If all set a libdrmaa context can be created by importing:
 
@@ -236,12 +245,15 @@ or with
 
 ## Job
 
-Jobs are the main objects in _wfl_. A job defines helper methods for dealing with the workload. Many of those methods return the job object itself to allow chaining calls in an easy way. Errors are stored internally and
-can be fetched with special methods. A job is as a container and control unit for tasks. Tasks are mapped in most cases to jobs of the underlying workload manager (like in Kubernetes, HPC schedulers etc.) or
-raw processes or containers.
+Jobs are the main objects in _wfl_. A job defines helper methods for dealing with the workload. Many of those methods
+return the job object itself to allow chaining calls in an easy way. Errors are stored internally and
+can be fetched with special methods. A job is as a container and control unit for tasks.
+Tasks are mapped in most cases to jobs of the underlying workload manager (like in Kubernetes,
+HPC schedulers etc.) or raw processes or containers.
 
 The _Run()_ method submits a new task and returns immediately, i.e. not waiting for the job to be started
-or finished. When the _Run()_ method errors the job submission has failed. The _Wait()_ method waits until the task has been finished. If multiple _Run()_ methods are called in a chain, multiple tasks might be executed
+or finished. When the _Run()_ method errors the job submission has failed. The _Wait()_ method waits
+until the task has been finished. If multiple _Run()_ methods are called in a chain, multiple tasks might be executed
 in parallel (depending on the backend). When the same task should be executed multiple times
 the _RunArray()_ method might be convenient. When using a HPC workload manager using the
 LibDRMAA implementation it gets translated to an array job, which is used for submitting
@@ -301,6 +313,7 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 | After() | Blocks a specific amount of time and continues | yes | |
 | Wait() | Waits until the task submitted latest finished | yes | |
 | Synchronize() | Waits until all submitted tasks finished | yes | |
+| Output() | Waits until the last submitted task is finished and returns the output as string| yes | Only for process, Docker, and K8s currently. |
 
 ### Job Flow Control
 
@@ -338,12 +351,12 @@ JobTemplates are specifying the details about a job. In the simplest case the jo
 default template when creating the context (_...ByConfig()_). Then each _Run()_ inherits the settings (like _JobCategory_ for the container image name and _OutputPath_ for redirecting output to _stdout_). If more details for specifying the jobs are required the _RunT()_ methods needs to be used.
 I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa2interface/blob/master/jobtemplate.go). In most cases only _RemoteCommand_, _Args_, _WorkingDirectory_, _JobCategory_, _JobEnvironment_,  _StageInFiles_ are evaluated. Functionality and semantic is up to the underlying [drmaa2os job tracker](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker).
 
-- [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
-- [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
-- [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
-- [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
-- [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
-- [Singularity support](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/singularity)
+* [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
+* [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
+* [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
+* [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
+* [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
+* [Singularity support](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/singularity)
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
@@ -376,13 +389,13 @@ Using a context a workflow can be established.
     wfl.NewWorkflow(wfl.NewProcessContext())
 ```
 
-Handling an error during workflow generation can be done by specifying a function which 
+Handling an error during workflow generation can be done by specifying a function which
 is only called in the case of an error.
 
 ```go
     wfl.NewWorkflow(wfl.NewProcessContext()).OnError(func(e error) {
-		panic(e)
-	})
+  panic(e)
+ })
 ```
 
 The workflow is used in order to instantiate the first job using the _Run()_ method.
@@ -458,23 +471,23 @@ strings are automatically converted to numbers.
 
 ```go
 job := flow.NewJob().RunMatrixT(
-				drmaa2interface.JobTemplate{
-					RemoteCommand: "{{cmd}}",
-					Args:          []string{"{{arg}}"},
-				},
-				wfl.Replacement{
-					Fields:       []wfl.JobTemplateField{{wfl.RemoteCommand},
+    drmaa2interface.JobTemplate{
+     RemoteCommand: "{{cmd}}",
+     Args:          []string{"{{arg}}"},
+    },
+    wfl.Replacement{
+     Fields:       []wfl.JobTemplateField{{wfl.RemoteCommand},
 
-					Pattern:      "{{cmd}}",
-					Replacements: []string{"sleep", "echo"},
-				},
-				wfl.Replacement{
-					Fields:       []wfl.JobTemplateField{{wfl.Args},
+     Pattern:      "{{cmd}}",
+     Replacements: []string{"sleep", "echo"},
+    },
+    wfl.Replacement{
+     Fields:       []wfl.JobTemplateField{{wfl.Args},
 
-					Pattern:      "{{arg}}",
-					Replacements: []string{"0.1", "0.2"},
-				},
-			)
+     Pattern:      "{{arg}}",
+     Replacements: []string{"0.1", "0.2"},
+    },
+   )
 job.Synchronize()
 ```
 
@@ -491,6 +504,7 @@ The successor task runs after the completion of the predecessor task.
     flow.Run("echo", "first task").ThenRun("echo", "second task")
     ...
 ```
+
 or
 
 ```go
@@ -562,7 +576,7 @@ Wait until all branches of a workflow are finished.
             TagWith("BranchA").
             Run("sleep", "1").
             Wait().
-			Notify(notifier)
+   Notify(notifier)
     }
 
     go func() {
@@ -570,7 +584,7 @@ Wait until all branches of a workflow are finished.
             TagWith("BranchB").
             Run("sleep", "1").
             Wait().
-			Notify(notifier)
+   Notify(notifier)
     }
 
     notifier.ReceiveJob()

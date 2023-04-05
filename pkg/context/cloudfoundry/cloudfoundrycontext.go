@@ -42,6 +42,7 @@ func NewCloudFoundryContextByCfg(cfg Config) *wfl.Context {
 	sm, err := drmaa2os.NewCloudFoundrySessionManager(cfg.APIAddr, cfg.User, cfg.Password, cfg.DBFile)
 	return &wfl.Context{
 		SM:              sm,
+		SMType:          wfl.CloudFoundrySessionManager,
 		CtxCreationErr:  err,
 		DefaultTemplate: cfg.DefaultTemplate,
 	}

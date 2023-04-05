@@ -1,14 +1,40 @@
 package wfl
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"text/template"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl/pkg/matrix"
 	"github.com/mitchellh/copystructure"
 )
+
+func replaceID(input string, id int64) string {
+	type Input struct {
+		ID int64
+	}
+	tmpl, err := template.New("replace").Parse(input)
+	if err != nil {
+		return input
+	}
+	out := bytes.NewBufferString("")
+	err = tmpl.Execute(out, Input{ID: id})
+	if err != nil {
+		return input
+	}
+	return out.String()
+}
+
+func replaceContextID(input string, ctx *Context) string {
+	return replaceID(input, ctx.ContextTaskID)
+}
+
+func replaceNextContextID(input string, ctx *Context) string {
+	return replaceID(input, ctx.GetNextContextTaskID())
+}
 
 // mergeJobTemplateWithDefaultTemplate adds requests from _def_ into _req_
 // if specified in req
@@ -79,6 +105,9 @@ func mergeStringMap(dst, src map[string]string) map[string]string {
 }
 
 func waitForJobEndAndState(j *Job) drmaa2interface.JobState {
+	if j == nil {
+		return drmaa2interface.Undetermined
+	}
 	job, jobArray, err := j.jobCheck()
 	if err != nil {
 		return drmaa2interface.Undetermined
