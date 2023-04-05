@@ -932,14 +932,6 @@ func (j *Job) Output() string {
 		return ""
 	}
 
-	if !isPathLocalFile(task.template.OutputPath) {
-		j.errorf(j.ctx, "Output(): output path %s is not a local file",
-			task.template.OutputPath)
-		j.lastError = fmt.Errorf("output path %s is not a local file",
-			task.template.OutputPath)
-		return ""
-	}
-
 	// for Kubernetes we need the jobinfo "output" extension
 	if j.wfl.ctx.SMType == KubernetesSessionManager {
 		ji, err := task.job.GetJobInfo()
@@ -961,6 +953,14 @@ func (j *Job) Output() string {
 		}
 		j.errorf(j.ctx, "Output(): no output in jobinfo")
 		j.lastError = errors.New("no output in jobinfo")
+		return ""
+	}
+
+	if !isPathLocalFile(task.template.OutputPath) {
+		j.errorf(j.ctx, "Output(): output path %s is not a local file",
+			task.template.OutputPath)
+		j.lastError = fmt.Errorf("output path %s is not a local file",
+			task.template.OutputPath)
 		return ""
 	}
 

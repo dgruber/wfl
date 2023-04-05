@@ -411,6 +411,27 @@ var _ = Describe("Job", func() {
 			})
 		})
 
+		Context("Job output related functions", func() {
+
+			It("should return the output of a job", func() {
+				os.Remove("tmp.db")
+				ctx := wfl.NewProcessContext().WithDefaultJobTemplate(
+					drmaa2interface.JobTemplate{
+						OutputPath: wfl.RandomFileNameInTempDir() + "-{{.ID}}",
+					},
+				)
+				flow := wfl.NewWorkflow(ctx)
+				Ω(wf.HasError()).Should(BeFalse())
+
+				job := flow.Run("echo", "hello")
+				Ω(job.Output()).Should(Equal("hello"))
+
+				// {{ .ID }} should be replaced by an internal number
+				Ω(job.Template().OutputPath).ShouldNot(HaveSuffix("-{{.ID}}"))
+			})
+
+		})
+
 	})
 
 	Context("Job Array", func() {
