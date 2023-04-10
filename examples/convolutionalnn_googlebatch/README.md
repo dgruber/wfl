@@ -15,7 +15,7 @@ This application demonstrates parallel training of a convolutional neural networ
 
 ```bash
 git clone https://github.com/dgruber/wfl.git
-cd wfl/examples/convolutionalnn_googlebatch/cifar10-parallel-training
+cd wfl/examples/convolutionalnn_googlebatch
 ```
 
 2. Set the required environment variables:
