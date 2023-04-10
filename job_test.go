@@ -91,7 +91,7 @@ var _ = Describe("Job", func() {
 		It("should be possible to kill a job", func() {
 			job := wf.Run("sleep", "1")
 			Ω(job).ShouldNot(BeNil())
-			job.Kill()
+			job.Kill().Wait()
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))
 		})
 

@@ -107,7 +107,7 @@ func main() {
 		outputFileName := template.JobEnvironment["OUTPUT_FILE"]
 
 		// Get job output from Bucket.
-		output, err := gcpbatchtracker.ReadFromBucket(GCPBucketName, outputFileName)
+		output, err := gcpbatchtracker.ReadFromBucket("gs://"+GCPBucketName, outputFileName)
 		if err != nil {
 			return fmt.Errorf("could not get job output for job %s: %w",
 				j.GetID(), err)
