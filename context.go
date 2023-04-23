@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -76,8 +77,21 @@ type Context struct {
 	JobSessionName string
 }
 
+// WithSessionName set the JobSessionName in the context.
+// The name is used to create a DRMAA2 session.
 func (c *Context) WithSessionName(jobSessionName string) *Context {
 	c.JobSessionName = jobSessionName
+	return c
+}
+
+// WithUniqueSessionName creates a unique session name which is
+// based on the current time and the process ID. Backends with
+// persistent job storage (e.g. Docker) would otherwise mix up
+// jobs from different application runs in the same flow if the
+// same session name is used.
+func (c *Context) WithUniqueSessionName() *Context {
+	number := rand.NewSource(time.Now().UnixNano()).Int63()
+	c.JobSessionName = fmt.Sprintf("wfl-%d-%d", number, os.Getpid())
 	return c
 }
 

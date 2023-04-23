@@ -1,16 +1,15 @@
-💙💛
-
-# wfl - A Simple and Pluggable Workflow Language for Go
+# ☮ wfl - A Simple and Pluggable Workflow Language for Go ☮
 
 _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 
 [![CircleCI](https://circleci.com/gh/dgruber/wfl/tree/master.svg?style=svg)](https://circleci.com/gh/dgruber/wfl/tree/master)
 [![codecov](https://codecov.io/gh/dgruber/wfl/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/wfl)
 
+_Check out my [blog article](https://gridengine.eu/index.php/programming-apis/259-streamline-your-machine-learning-workflows-with-the-wfl-go-library-2023-04-10), where I discuss leveraging the wfl library for ML/AI applications using Python and TensorFlow, among other tools._
+
 Creating process, container, pod, task, or job workflows based on raw interfaces of
-operating systems, Docker, Google Batch, Kubernetes, Cloud Foundry, and HPC job schedulers
-can be a tedious. Lots of repeating code is required. All workload management systems have a
-different API.
+operating systems, Docker, Google Batch, Kubernetes, and HPC job schedulers
+can be a tedious. Lots of repeating code is required. All workload management systems have a different API.
 
 _wfl_ abstracts away from the underlying details of the processes, containers, and
 workload management systems. _wfl_ provides a simple, unified interface which allows
@@ -79,16 +78,12 @@ _wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine 
     wfl.NewWorkflow(libdrmaa.NewLibDRMAAContext()).Run("sleep", "60").Wait()
 ```
 
-_wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way
-as on a high-performance compute cluster. Things missing: On small scale you probably miss data
-management - moving results from one job to another. That's deliberately not implemented.
+_wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way as on a high-performance compute cluster.
 
-There is now support for getting the job output as a string back with the _Output()_
-method. It is a convenience wrapper which just reads the job output from a file which
+There is now basic support for getting the job output as a string back with the _Output()_ method. It is a convenience wrapper which just reads the job output from a file which
 must be set before with _OutputPath_. Note that when having multiple tasks, they need
-to have different output paths set (hence use _RunT()_, or different flows, or try
-the new "{{.ID}}" replacement in the _OutputPath_). _Output()_ is currently implemented
-for the OS, Docker, and Kubernetes backend.
+to have different output paths set (hence use _RunT()_, or different flows, try
+the new "{{.ID}}" replacement in the _OutputPath_, or use _wfl.RandomFileNameInTempDir()_ as _OutputPath_). _Output()_ is currently implemented for the OS, Docker, and Kubernetes backend.
 
 Some backend implementations (like for Kubernetes) support basic file transfer in the
 _JobTemplate_ (when using _RunT()_) using the _StageInFiles_ and _StageOutFiles_ maps.
@@ -304,7 +299,8 @@ Methods can be classified in blocking, non-blocking, job template based, functio
 | OnSuccess() | Executes a function if the task run successfully (exit code 0)  | yes | |
 | OnFailure() | Executes a function if the task failed (exit code != 0)  | yes | |
 | OnError() | Executes a function if the task could not be created  | yes | |
-| ForAll(f, interface{}) | Executes a user defined function on all tasks | no | |
+| ForEach(f, interface{}) | Executes a user defined function by iterating over all tasks | does not wait for jobs | |
+| ForAll(f, interface{}) | Executes a user defined function concurrently in goroutines on all tasks | no | |
 
 ### Blocker
 

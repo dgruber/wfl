@@ -1,6 +1,8 @@
 package wfl_test
 
 import (
+	"sync"
+
 	"github.com/dgruber/wfl"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -521,7 +523,7 @@ var _ = Describe("Job", func() {
 
 			// get all job template commands
 			cmdList := make([]string, 0, 4)
-			Expect(job.ForAll(getRemoteCommands, &cmdList)).To(Succeed())
+			Expect(job.ForEach(getRemoteCommands, &cmdList)).To(Succeed())
 			Expect(cmdList).To(ConsistOf("sleep", "echo", "sleep", "echo"))
 
 		})
@@ -568,6 +570,111 @@ var _ = Describe("Job", func() {
 			Expect(jis).NotTo(BeNil())
 			Expect(len(jis)).Should(BeNumerically("==", 0))
 		})
+
+	})
+
+	Context("Job ouput", func() {
+
+		It("should return the output for all job IDs", func() {
+			flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(
+				wfl.ProcessConfig{
+					DefaultTemplate: drmaa2interface.JobTemplate{
+						// OutputPath is required to set to a unique
+						// file for each job. That is why we use
+						// RandomFileNameInTempDir() here.
+						OutputPath: wfl.RandomFileNameInTempDir(),
+					},
+				},
+			))
+			job := flow.Run("echo", "foo").Resubmit(4)
+			job.Synchronize()
+
+			outputMap := job.OutputsForJobIDs(nil)
+			Ω(outputMap).Should(HaveLen(5))
+			Ω(outputMap[job.JobID()]).Should(Equal("foo"))
+			for _, j := range job.JobInfos() {
+				Ω(outputMap[j.ID]).Should(Equal("foo"))
+			}
+
+			// test with a filter
+			outputMap = job.OutputsForJobIDs([]string{job.JobID()})
+			Ω(outputMap).Should(HaveLen(1))
+			Ω(outputMap[job.JobID()]).Should(Equal("foo"))
+
+			// test with a filter which does not match
+			outputMap = job.OutputsForJobIDs([]string{"not-existing"})
+			Ω(outputMap).Should(HaveLen(0))
+		})
+	})
+
+	Context("ForEach and ForAll", func() {
+
+		It("should run ForEach and ForAll on all jobs", func() {
+
+			flow := wfl.NewWorkflow(wfl.NewProcessContext())
+
+			job := flow.Run("echo", "foo").Resubmit(4).Synchronize()
+
+			outputs := sync.Map{}
+
+			collectJobIDs := func(j drmaa2interface.Job, i interface{}) error {
+				ids := i.(*sync.Map)
+				ids.Store(j.GetID(), true)
+				return nil
+			}
+
+			// runs in parallel
+			job.ForAll(collectJobIDs, &outputs)
+
+			for _, ji := range job.JobInfos() {
+				_, ok := outputs.Load(ji.ID)
+				Ω(ok).Should(BeTrue())
+			}
+
+			// runs sequentially
+			outputs2 := make(map[string]bool)
+
+			collectJobIDs2 := func(j drmaa2interface.Job, i interface{}) error {
+				ids := i.(*map[string]bool)
+				(*ids)[j.GetID()] = true
+				return nil
+			}
+
+			err := job.ForEach(collectJobIDs2, &outputs2)
+			Ω(err).Should(BeNil())
+			// len should be 5
+			Ω(len(outputs2)).Should(BeNumerically("==", 5))
+
+			// compare both maps
+			outputs.Range(func(key, value interface{}) bool {
+				val, ok := outputs2[key.(string)]
+				Ω(ok).Should(BeTrue())
+				Ω(val).Should(BeTrue())
+				return true
+			})
+
+		})
+
+		It("should run ForAll on all jobs in parallel", func() {
+			flow := wfl.NewWorkflow(wfl.NewProcessContext())
+
+			job := flow.Run("echo", "foo").Resubmit(4).Synchronize()
+
+			timeConsumingFunction := func(j drmaa2interface.Job, i interface{}) error {
+				<-time.Tick(50 * time.Millisecond)
+				return nil
+			}
+
+			// runs in parallel
+			start := time.Now()
+			job.ForAll(timeConsumingFunction, nil)
+			Ω(time.Since(start)).Should(BeNumerically("<=", 150*time.Millisecond))
+
+			start = time.Now()
+			job.ForEach(timeConsumingFunction, nil)
+			Ω(time.Since(start)).Should(BeNumerically(">=", 250*time.Millisecond))
+		})
+
 	})
 
 	Context("Basic error cases", func() {

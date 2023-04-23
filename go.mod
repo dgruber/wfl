@@ -18,6 +18,7 @@ require (
 	github.com/onsi/gomega v1.27.6
 	github.com/rs/zerolog v1.29.0
 	github.com/sirupsen/logrus v1.9.0
+	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
 	k8s.io/klog/v2 v2.90.1
 )
 

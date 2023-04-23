@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"runtime"
 	"sync"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/mitchellh/copystructure"
+	"golang.org/x/exp/slices"
 )
 
 type task struct {
@@ -673,11 +672,27 @@ func (j *Job) ListAll() []drmaa2interface.Job {
 	return all
 }
 
-// ForAll executes a user defined function for each task of the job.
+// ForEach executes a user defined function for each task of the job.
 // The function has an interface as input parameter which can be
 // used to pass additional data into or out of the function as a
 // result (like a pointer to a struct or pointer to an output slice).
-func (j *Job) ForAll(f func(drmaa2interface.Job, interface{}) error, params interface{}) error {
+// The second argument of _ForEach_ must be a pointer to the data type
+// or nil. The the iteration stops when all reachable tasks are processed
+// or the user defined function returns an error for one task.
+//
+// ForEach processes all tasks of the job/flow iteratively.
+//
+// Example:
+//
+//	getJobIDs := func(j drmaa2interface.Job, i interface{}) error {
+//	    jobIDs := i.(*[]string) // i is a pointer to a slice of strings here
+//	    *jobIDs = append(*jobIDs, j.GetID())
+//	    return nil
+//	}
+//	var jobIDs []string // slice of strings which is passed to the function
+//	flow.ForAll(getJobIDs, &jobIDs)
+//	// jobIDs now contains all job IDs of the flow
+func (j *Job) ForEach(f func(drmaa2interface.Job, interface{}) error, params interface{}) error {
 	j.begin(j.ctx, "ForAll()")
 	for _, task := range j.tasklist {
 		if task.job == nil {
@@ -690,6 +705,46 @@ func (j *Job) ForAll(f func(drmaa2interface.Job, interface{}) error, params inte
 		}
 	}
 	return nil
+}
+
+// ForAll executes a user defined function for each task of the job.
+// The function has an interface as input parameter which can be
+// used to pass additional data into or out of the function as a
+// result (like a pointer to a struct or pointer to an output slice).
+//
+// Unlike ForEach ForAll processes all tasks of the job/flow in parallel
+// in goroutines. After starting the functions in parallel it waits until
+// all goroutines are finished.
+//
+// It is up to the caller to ensure that the function is thread safe and
+// that the data type of the second argument is thread safe or protected
+// by a mutex.
+//
+// If you are unsure please use ForEach instead. For an example see the
+// documentation of ForEach.
+func (j *Job) ForAll(f func(drmaa2interface.Job, interface{}) error, params interface{}) {
+	j.begin(j.ctx, "ForAll()")
+
+	// wait for all Goroutines to finish
+	wg := sync.WaitGroup{}
+	wg.Add(len(j.tasklist))
+
+	for _, task := range j.tasklist {
+		if task.job == nil {
+			wg.Done()
+			continue
+		}
+		localTask := task
+		go func() {
+			ferr := f(localTask.job, params)
+			if ferr != nil {
+				j.warningf(j.ctx, "ForAll(): aborting - user defined function errored: %v", ferr)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
 
 // HasAnyFailed returns true if there is any failed task in the chain.
@@ -897,9 +952,60 @@ func (j *Job) OnError(f func(err error)) *Job {
 	return j
 }
 
+// OutputsForJobIDs returns a map of each job ID and their output
+// if jobIDs is nil. Otherwise only the output for the given job IDs
+// is returned.
+//
+// Only supported for the default session manager, docker session manager
+// and kubernetes session manager.
+func (j *Job) OutputsForJobIDs(jobIDs []string) map[string]string {
+
+	j.infof(j.ctx, "OutputsForJobIDs()")
+
+	if j.wfl.ctx.SMType != DefaultSessionManager &&
+		j.wfl.ctx.SMType != DockerSessionManager &&
+		j.wfl.ctx.SMType != KubernetesSessionManager {
+		j.errorf(j.ctx,
+			"OutputsForJobIDs(): not supported for backend %s",
+			j.wfl.ctx.SMType)
+		j.lastError = errors.New("ouput not supported for this backend")
+		return nil
+	}
+
+	// get output for each job in the list
+	getOutputFunction := func(job drmaa2interface.Job, i interface{}) error {
+		outputs := i.(*map[string]string)
+		jobID := job.GetID()
+		if jobIDs != nil && !slices.Contains(jobIDs, jobID) {
+			return nil
+		}
+		output, err := getJobOutpuForJob(j.wfl.ctx.SMType, job)
+		if err != nil {
+			(*outputs)[jobID] = ""
+			j.errorf(j.ctx,
+				"OutputsForJobIDs(): error getting output for job %s: %s",
+				jobID, err)
+			return nil
+		}
+		(*outputs)[jobID] = output
+		return nil
+	}
+
+	outputs := make(map[string]string)
+	j.ForEach(getOutputFunction, &outputs)
+	return outputs
+}
+
 // Output returns the output of the last task if it is in an end state. In case
 // of OS process backend the output is read from the file specified in the
-// JobTemplate.OutputPath. In case of other backends the output is not available.
+// JobTemplate.OutputPath. If it is not set, the output is printed to stdout
+// and cannot be retrieved. When having multiple tasks, the output path of
+// each task must be set to a different file otherwise the output will be
+// overwritten. This can be achieved by having the {{.ID}} placeholder in the
+// output path (check: OutputPath: wfl.RandomFileNameInTempDir())
+//
+// Currently only supported for the default OS session manager, Docker session
+// manager and Kubernetes session manager.
 func (j *Job) Output() string {
 	j.infof(j.ctx, "Output()")
 
@@ -918,86 +1024,12 @@ func (j *Job) Output() string {
 		return ""
 	}
 
-	state := task.job.GetState()
-	if state == drmaa2interface.Undetermined {
-		j.errorf(j.ctx, "Output(): job state is undetermined")
-		j.lastError = errors.New("job state is undetermined")
-		return ""
-	}
-
-	err := task.job.WaitTerminated(drmaa2interface.InfiniteTime)
+	output, err := getJobOutpuForJob(j.wfl.ctx.SMType, task.job)
 	if err != nil {
-		j.errorf(j.ctx, "Output(): failed waiting for job termination: %s", err)
-		j.lastError = fmt.Errorf("failed waiting for job termination: %s", err)
+		j.errorf(j.ctx, "Output(): %s", err)
+		j.lastError = err
 		return ""
 	}
 
-	// for Kubernetes we need the jobinfo "output" extension
-	if j.wfl.ctx.SMType == KubernetesSessionManager {
-		ji, err := task.job.GetJobInfo()
-		if err != nil {
-			j.errorf(j.ctx, "Output(): failed getting job info: %s", err)
-			j.lastError = fmt.Errorf("failed getting job info: %s", err)
-			return ""
-		}
-		if ji.ExtensionList != nil {
-			if output, ok := ji.ExtensionList["output"]; ok {
-				if len(output) > 0 && output[len(output)-1] == '\n' {
-					output = output[:len(output)-1]
-				}
-				if len(output) > 0 && output[len(output)-1] == '\r' {
-					output = output[:len(output)-1]
-				}
-				return output
-			}
-		}
-		j.errorf(j.ctx, "Output(): no output in jobinfo")
-		j.lastError = errors.New("no output in jobinfo")
-		return ""
-	}
-
-	if !isPathLocalFile(task.template.OutputPath) {
-		j.errorf(j.ctx, "Output(): output path %s is not a local file",
-			task.template.OutputPath)
-		j.lastError = fmt.Errorf("output path %s is not a local file",
-			task.template.OutputPath)
-		return ""
-	}
-
-	data, err := ioutil.ReadFile(task.template.OutputPath)
-	if err != nil {
-		j.errorf(j.ctx, "Output(): failed reading file %s: %s",
-			task.template.OutputPath, err)
-		j.lastError = fmt.Errorf("failed reading file %s: %s",
-			task.template.OutputPath, err)
-		return ""
-	}
-
-	// OS process -> the output is in the file
-	// remove trailing newline cr
-	if len(data) > 0 && data[len(data)-1] == '\n' {
-		data = data[:len(data)-1]
-	}
-	if len(data) > 0 && data[len(data)-1] == '\r' {
-		data = data[:len(data)-1]
-	}
-	return string(data)
-
-}
-
-func isPathLocalFile(path string) bool {
-	normalFile := path != "/dev/null" &&
-		path != "/dev/stdout" &&
-		path != "/dev/stderr" &&
-		path != ""
-
-	if normalFile {
-		// check if path is a file which exists with os.Stat
-		fi, err := os.Stat(path)
-		if err != nil {
-			return false
-		}
-		return !fi.IsDir()
-	}
-	return false
+	return output
 }
