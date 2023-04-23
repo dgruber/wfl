@@ -8,7 +8,7 @@ COPY . .
 
 RUN go mod init app
 RUN go get github.com/dgruber/drmaa2interface
-RUN go get github.com/dgruber/wfl
+RUN go get github.com/dgruber/wfl@v1.3.0
 
 CMD ["go", "run", "19.go"]
 

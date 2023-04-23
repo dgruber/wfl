@@ -32,9 +32,9 @@ func main() {
 
 	// Create a workflow context to execute jobs in parallel
 	ctx := wfl.NewProcessContext().WithDefaultJobTemplate(drmaa2interface.JobTemplate{
-		OutputPath: wfl.RandomFileNameInTempDir() + "{{.ID}}.out",
+		OutputPath: wfl.RandomFileNameInTempDir(),
 		ErrorPath:  "/dev/stderr",
-	}).WithSessionName("wfl-example")
+	}).WithSessionName("sentiment-analysis")
 
 	flow := wfl.NewWorkflow(ctx).NewJob()
 
@@ -81,7 +81,7 @@ print(sentiment)`, phrase)},
 	}
 
 	// Collect all outputs
-	err := flow.ForAll(getJobOutput, &phraseSentiments)
+	err := flow.ForEach(getJobOutput, &phraseSentiments)
 	if err != nil {
 		panic(err)
 	}
