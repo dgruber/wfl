@@ -9,6 +9,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl"
 	"github.com/dgruber/wfl/pkg/context/docker"
+	"golang.org/x/exp/slices"
 )
 
 func main() {
@@ -16,20 +17,20 @@ func main() {
 	ctx := docker.NewDockerContextByCfg(
 		docker.Config{
 			DefaultTemplate: drmaa2interface.JobTemplate{
-				OutputPath:  wfl.RandomFileNameInTempDir() + "-{{ .ID }}",
+				OutputPath:  wfl.RandomFileNameInTempDir(),
 				JobCategory: "parallel-training",
 				ErrorPath:   "/dev/stderr",
 			},
 		},
-	).WithSessionName("mnist-hyperparameter-tuning")
+	).WithUniqueSessionName()
 
 	flow := wfl.NewWorkflow(ctx)
 	job := flow.NewJob()
 
 	// Define the search space for hyperparameters.
 	learningRates := []float64{0.001, 0.01, 0.1}
-	batchSizes := []int{32, 64, 128} // 64, 128
-	numEpochs := []int{10, 20, 30}   // 20, 30
+	batchSizes := []int{32, 64, 128}
+	numEpochs := []int{10, 20, 30}
 
 	// Run training jobs concurrently with different combinations of hyperparameters.
 	var bestAccuracy float64
@@ -61,6 +62,7 @@ func main() {
 				// macbook with too many jobs at the same time. We could do that when
 				// submitting to an HPC cluster (libdrmaa) or a Cloud Provider (using
 				// gcpbatchtracker)!
+				// Remove that line if you want to run all jobs in parallel.
 				job.Wait()
 			}
 		}
@@ -70,7 +72,7 @@ func main() {
 	job.Synchronize()
 
 	getJobOutput := func(j drmaa2interface.Job, i interface{}) error {
-		if !IsJobIDInList(j.GetID(), jobIDs) {
+		if !slices.Contains(jobIDs, j.GetID()) {
 			// Skip jobs that are not part of the hyperparameter tuning.
 			return nil
 		}
@@ -79,9 +81,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		// Print Job OutputPath on stdout
 		fmt.Printf("OutputPath: %s\n", template.OutputPath)
-		// parse output from OutputPath
 		content, err := ioutil.ReadFile(template.OutputPath)
 		if err != nil {
 			panic(err)
@@ -89,7 +89,7 @@ func main() {
 		// Print output from the training job.
 		fmt.Printf("Job %s: %s\n", j.GetID(), string(content))
 
-		// get last line of content
+		// Get last line of content
 		lines := strings.Split(string(content), "\n")
 		lastLine := lines[len(lines)-2]
 		// Parse the accuracy from the output.
@@ -109,19 +109,9 @@ func main() {
 	}
 
 	// Find the best hyperparameters.
-	job.ForAll(getJobOutput, nil)
+	job.ForEach(getJobOutput, nil)
 
 	// Print the best hyperparameters and accuracy.
 	fmt.Printf("Best hyperparameters: %s\n", bestParams)
 	fmt.Printf("Best accuracy: %.2f%%\n", bestAccuracy*100)
-}
-
-// IsJobIDInList returns true if the given job ID is in the list of job IDs.
-func IsJobIDInList(jobID string, jobIDs []string) bool {
-	for _, id := range jobIDs {
-		if id == jobID {
-			return true
-		}
-	}
-	return false
 }
