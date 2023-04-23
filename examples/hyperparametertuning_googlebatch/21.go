@@ -31,7 +31,7 @@ func main() {
 			GoogleProjectID: googleProject,
 			Region:          "us-central1",
 		},
-	).WithSessionName("mnist-hyperparameter-tuning")
+	).WithUniqueSessionName()
 
 	// Please adapt the bucket name to your needs.
 	GCPBucketName := os.Getenv("GOOGLE_BUCKET")
@@ -133,7 +133,7 @@ func main() {
 	}
 
 	// Find the best hyperparameters.
-	err := job.ForAll(getJobOutput, nil)
+	err := job.ForEach(getJobOutput, nil)
 	if err != nil {
 		fmt.Printf("Error during job output retrieval: %s\n", err)
 	}

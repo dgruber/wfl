@@ -44,7 +44,7 @@ func main() {
 			GoogleProjectID: GoogleProject,
 			Region:          "us-central1",
 		},
-	).WithSessionName("cifar10-parallel-training")
+	).WithUniqueSessionName()
 
 	numJobs := 4 // Number of parallel training jobs
 
@@ -141,7 +141,7 @@ func main() {
 	job.Synchronize()
 
 	// Print the accuracy of each training job.
-	job.ForAll(getJobOutput, trainingJobIDs)
+	job.ForEach(getJobOutput, trainingJobIDs)
 
 }
 

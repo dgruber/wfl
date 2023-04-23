@@ -680,7 +680,8 @@ func (j *Job) ListAll() []drmaa2interface.Job {
 // or nil. The the iteration stops when all reachable tasks are processed
 // or the user defined function returns an error for one task.
 //
-// ForEach processes all tasks of the job/flow iteratively.
+// ForEach processes all tasks of the job/flow iteratively. ForAll processes
+// all tasks of the job/flow in parallel and waits until all tasks are finished.
 //
 // Example:
 //
@@ -690,7 +691,7 @@ func (j *Job) ListAll() []drmaa2interface.Job {
 //	    return nil
 //	}
 //	var jobIDs []string // slice of strings which is passed to the function
-//	flow.ForAll(getJobIDs, &jobIDs)
+//	flow.ForEach(getJobIDs, &jobIDs)
 //	// jobIDs now contains all job IDs of the flow
 func (j *Job) ForEach(f func(drmaa2interface.Job, interface{}) error, params interface{}) error {
 	j.begin(j.ctx, "ForAll()")
@@ -952,7 +953,7 @@ func (j *Job) OnError(f func(err error)) *Job {
 	return j
 }
 
-// OutputsForJobIDs returns a map of each job ID and their output
+// JobIDs returns a map of each job ID and their output
 // if jobIDs is nil. Otherwise only the output for the given job IDs
 // is returned.
 //
