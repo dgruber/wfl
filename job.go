@@ -953,6 +953,16 @@ func (j *Job) OnError(f func(err error)) *Job {
 	return j
 }
 
+// OnErrorPanic panics and prints the error if the last Job operation
+// resulted in an error. Otherwise the job is returned.
+func (j *Job) OnErrorPanic() *Job {
+	j.begin(j.ctx, "OnErrorPanic()")
+	if j.lastError != nil {
+		panic(j.lastError)
+	}
+	return j
+}
+
 // JobIDs returns a map of each job ID and their output
 // if jobIDs is nil. Otherwise only the output for the given job IDs
 // is returned.

@@ -84,6 +84,15 @@ func (w *Workflow) OnError(f func(e error)) *Workflow {
 	return w
 }
 
+// OnErrorPanic panics if happened during creating a job session
+// or opening a job session.
+func (w *Workflow) OnErrorPanic() *Workflow {
+	if w.workflowCreationError != nil {
+		panic(w.workflowCreationError)
+	}
+	return w
+}
+
 // Error returns the error if happened during creating a job session
 // or opening a job session.
 func (w *Workflow) Error() error {
