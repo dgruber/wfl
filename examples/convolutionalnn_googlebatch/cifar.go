@@ -10,6 +10,7 @@ import (
 	"github.com/dgruber/gcpbatchtracker"
 	"github.com/dgruber/wfl"
 	"github.com/dgruber/wfl/pkg/context/googlebatch"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -32,7 +33,7 @@ func main() {
 	fmt.Printf("Using Google project: %s\n", GoogleProject)
 	fmt.Printf("Using Google bucket: %s\n", GCPBucketName)
 
-	// Create a Docker context for running the training jobs.
+	// Create a GoogleBatch context for running the training jobs.
 	ctx := googlebatch.NewGoogleBatchContextByCfg(
 		googlebatch.Config{
 			DefaultTemplate: drmaa2interface.JobTemplate{
@@ -184,10 +185,5 @@ var getJobOutput = func(j drmaa2interface.Job, i interface{}) error {
 
 // IsJobIDInList returns true if the given job ID is in the list of job IDs.
 func IsJobIDInList(jobID string, jobIDs []string) bool {
-	for _, id := range jobIDs {
-		if id == jobID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(jobIDs, jobID)
 }
