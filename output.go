@@ -33,11 +33,7 @@ func getJobOutputOS(job drmaa2interface.Job) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed getting job template: %s", err)
 	}
-	if !isPathLocalFile(template.OutputPath) {
-		return "", fmt.Errorf("output path %s is not a local file",
-			template.OutputPath)
-	}
-	return getFileContent(template.OutputPath)
+	return getOutputFromPath(template.OutputPath)
 }
 
 func getJobOutputDocker(job drmaa2interface.Job) (string, error) {
@@ -45,11 +41,15 @@ func getJobOutputDocker(job drmaa2interface.Job) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed getting job template: %s", err)
 	}
-	if !isPathLocalFile(template.OutputPath) {
+	return getOutputFromPath(template.OutputPath)
+}
+
+func getOutputFromPath(outputPath string) (string, error) {
+	if !isPathLocalFile(outputPath) {
 		return "", fmt.Errorf("output path %s is not a local file",
-			template.OutputPath)
+			outputPath)
 	}
-	return getFileContent(template.OutputPath)
+	return getFileContent(outputPath)
 }
 
 func getFileContent(path string) (string, error) {
