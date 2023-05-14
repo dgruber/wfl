@@ -1044,3 +1044,31 @@ func (j *Job) Output() string {
 
 	return output
 }
+
+func (j *Job) OutputError() string {
+	j.infof(j.ctx, "OutputError()")
+
+	if j.wfl.ctx.SMType != DefaultSessionManager &&
+		j.wfl.ctx.SMType != DockerSessionManager &&
+		j.wfl.ctx.SMType != KubernetesSessionManager {
+		j.errorf(j.ctx, "OutputError(): not supported for backend %s", j.wfl.ctx.SMType)
+		j.lastError = errors.New("ouput not supported for this backend")
+		return ""
+	}
+
+	task := j.lastJob()
+	if task == nil || task.job == nil {
+		j.errorf(j.ctx, "OutputError(): no task found")
+		j.lastError = errors.New("no task found")
+		return ""
+	}
+
+	output, err := getJobOutpuForJob(j.wfl.ctx.SMType, task.job)
+	if err != nil {
+		j.errorf(j.ctx, "OutputError(): %s", err)
+		j.lastError = err
+		return ""
+	}
+
+	return output
+}

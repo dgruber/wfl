@@ -16,6 +16,7 @@ type Workflow struct {
 	js                    drmaa2interface.JobSession
 	workflowCreationError error
 	log                   log.Logger
+	llmConfig             *llmConfig
 }
 
 // NewWorkflow creates a new Workflow based on the given execution context.
