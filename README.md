@@ -49,6 +49,7 @@ already pulled before).
  "github.com/dgruber/wfl/pkg/context/docker"
     )
     
+    ...
     ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
     wfl.NewWorkflow(ctx).Run("sleep", "60").Wait()
 ```
@@ -140,14 +141,14 @@ For running jobs either in VMs or in containers in Google Batch the _GoogleBatch
 
 ```go
     googlebatch.NewGoogleBatchContextByCfg(
-  googlebatch.Config{
-   DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
-   GoogleProjectID:    "google-project",
-   Region:             "europe-north1",
-   DefaultTemplate: drmaa2interface.JobTemplate{
-    MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
-    MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
-   },
+        googlebatch.Config{
+        DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
+        GoogleProjectID:    "google-project",
+        Region:             "europe-north1",
+        DefaultTemplate: drmaa2interface.JobTemplate{
+        MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
+        MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
+    },
   })
 ```  
 
@@ -193,10 +194,8 @@ _libdrmaa.so_ available in the library path at runtime. Grid Engine ships _libdr
 but the _LD_LIBRARY_PATH_ needs to be typically set. For SLURM _libdrmaa.so_ often needs
 to be [build](https://github.com/natefoo/slurm-drmaa).
 
-Since C go is used under the hood (drmaa2os which uses go drmaa) some compiler flags needs
-to be set during build time. Those flags depend on the workload manager used. Best check
-out the go drmaa project for finding the right flags.
-immeadiately
+Since C go is used under the hood (drmaa2os which uses [go drmaa](https://github.com/dgruber/drmaa)) some compiler flags needs to be set during build time. Those flags depend on the workload manager used. Best check out the go drmaa project for finding the right flags.
+
 For building SLURM requires:
 
 ```bash
@@ -341,6 +340,25 @@ use the job object afterwards. Calls DRMAA2 Reap() on all tasks. | no | |
 | ListAllFailed() | Waits for all tasks and returns the failed tasks as DRMAA2 jobs | yes | |
 | ListAll() | Returns all tasks as a slice of DRMAA2 jobs | no | |
 
+### LLM (GPT) Enhancements
+
+For using the LLM methods the workflow needs to be initialized with an LLM config. For this
+the _WithLLMOpenAI()_ method is used.
+
+````go
+	flow := wfl.NewWorkflow(wfl.NewProcessContext()).WithLLMOpenAI(
+		wfl.OpenAIConfig{
+			Token: os.Getenv("OPENAI_KEY"),
+		}).OnErrorPanic()
+````
+The the flow offers the _TemplateP("what should the script do?")_ method which can create
+Job Templates or following Job methods can be use:
+
+| Function Name | Purpose | Blocking | Examples |
+| -- | -- | -- | -- |
+| OutputP() | Returns the output of the job on which the given prompt is applied | yes | OutputP("Summarize in 2-3 sentences.") |
+| ErrorP() | Takes the submission error message and applies a prompt | no | ErrorP("Explain the error and provide a solution") |
+
 ## JobTemplate
 
 JobTemplates are specifying the details about a job. In the simplest case the job is specified by the application name and its arguments like it is typically done in the OS shell. In that case the _Run()_ methods (_ThenRun()_, _OnSuccessRun()_, _OnFailureRun()_) can be used. Job template based methods (like _RunT()_) can be completely avoided by providing a
@@ -356,7 +374,7 @@ I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
-# Examples
+## Examples
 
 For examples please have a look into the examples directory. [template](https://github.com/dgruber/wfl/tree/master/examples/template/template.go) is a canonical example of a pre-processing job, followed by parallel execution, followed by a post-processing job.
 

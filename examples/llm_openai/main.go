@@ -19,12 +19,11 @@ func main() {
 func OutputTransformationFlow() {
 	flow := wfl.NewWorkflow(wfl.NewProcessContext()).WithLLMOpenAI(
 		wfl.OpenAIConfig{
-			Token:      os.Getenv("OPENAI_KEY"),
-			RunPMethod: wfl.RunPBehaviorMacOSShellScript,
+			Token: os.Getenv("OPENAI_KEY"),
 		}).OnErrorPanic()
 
 	job := flow.RunT(drmaa2interface.JobTemplate{
-		RemoteCommand: "/bin/bash", // NOTE the job error here!
+		RemoteCommand: "/bin/bash",
 		Args: []string{
 			"-c",
 			`uname -a`,
@@ -41,8 +40,7 @@ func OutputTransformationFlow() {
 func ErrorDescriptionFlow() {
 	flow := wfl.NewWorkflow(wfl.NewProcessContext()).WithLLMOpenAI(
 		wfl.OpenAIConfig{
-			Token:      os.Getenv("OPENAI_KEY"),
-			RunPMethod: wfl.RunPBehaviorMacOSShellScript,
+			Token: os.Getenv("OPENAI_KEY"),
 		}).OnErrorPanic()
 
 	job := flow.RunT(drmaa2interface.JobTemplate{
@@ -67,8 +65,7 @@ func TemplatePExampleFlow() {
 
 	flow := wfl.NewWorkflow(wfl.NewProcessContext()).WithLLMOpenAI(
 		wfl.OpenAIConfig{
-			Token:      os.Getenv("OPENAI_KEY"),
-			RunPMethod: wfl.RunPBehaviorMacOSShellScript,
+			Token: os.Getenv("OPENAI_KEY"),
 		}).OnErrorPanic()
 
 	// Create a job template which runs a bash command for macOS which is
