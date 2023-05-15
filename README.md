@@ -142,14 +142,14 @@ For running jobs either in VMs or in containers in Google Batch the _GoogleBatch
 ```go
     googlebatch.NewGoogleBatchContextByCfg(
         googlebatch.Config{
-        DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
-        GoogleProjectID:    "google-project",
-        Region:             "europe-north1",
-        DefaultTemplate: drmaa2interface.JobTemplate{
-        MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
-        MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
-    },
-  })
+          DefaultJobCategory: googlebatch.JobCategoryScript, // default container image Run() is using or script if cmd runs as script
+          GoogleProjectID:    "google-project",
+          Region:             "europe-north1",
+          DefaultTemplate: drmaa2interface.JobTemplate{
+          MinSlots: 1, // for MPI set MinSlots = MaxSlots and > 1
+          MaxSlots: 1, // for just a bunch of tasks MinSlots = 1 (parallelism) and MaxSlots = <tasks>
+	},
+    )
 ```  
 
 When you want to run the workflow as Cloud Foundry tasks the _CloudFoundryContext_ can be used:
@@ -351,8 +351,8 @@ the _WithLLMOpenAI()_ method is used.
 			Token: os.Getenv("OPENAI_KEY"),
 		}).OnErrorPanic()
 ````
-The the flow offers the _TemplateP("what should the script do?")_ method which can create
-Job Templates or following Job methods can be use:
+Then the flow offers the _TemplateP("what should the script do?")_ method which can create
+job templates (_flow.TemplateP()_) and following _Job_ methods can be use:
 
 | Function Name | Purpose | Blocking | Examples |
 | -- | -- | -- | -- |
