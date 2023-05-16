@@ -7,7 +7,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 
 ## What's new?
 
-- GPT support for experimenting with LLMs in job workflows ([blog article](https://www.gridengine.eu/index.php/programming-apis/260-enhancing-wfl-with-large-language-models-researching-the-power-of-gpt-for-hpcaienterprisejob-workflows-2023-05-14), [examples](https://github.com/dgruber/wfl/blob/master/examples/llm_openai/main.go)
+- GPT support for experimenting with LLMs in job workflows ([blog article](https://www.gridengine.eu/index.php/programming-apis/260-enhancing-wfl-with-large-language-models-researching-the-power-of-gpt-for-hpcaienterprisejob-workflows-2023-05-14), [examples](https://github.com/dgruber/wfl/blob/master/examples/llm_openai/main.go))
 - _Check out my [blog article](https://gridengine.eu/index.php/programming-apis/259-streamline-your-machine-learning-workflows-with-the-wfl-go-library-2023-04-10), where I discuss leveraging the wfl library for ML/AI applications using Python and TensorFlow, among other tools._
 
 ## Introduction
