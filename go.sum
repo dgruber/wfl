@@ -84,6 +84,8 @@ github.com/dgruber/drmaa2interface v1.1.0 h1:kT4pr3HUAn6VzgpY/+P/W3/g2pqfNTtrurE
 github.com/dgruber/drmaa2interface v1.1.0/go.mod h1:z5D/3bWbhgF7Z6Gj1WxrC8/fJxu5ZeP2gv7U8AjXDLw=
 github.com/dgruber/drmaa2os v0.3.29 h1:qWnV07necCqJOy8NTauh9T9YsGP72oOVNMjWWqbP6vs=
 github.com/dgruber/drmaa2os v0.3.29/go.mod h1:YoP7RGyWxmokPNPL5DHTEHxxVS0c0oxtTTwxZx/KXqY=
+github.com/dgruber/drmaa2os v0.3.30-0.20231011110435-66169dac15d1 h1:os8HUpIZpn84plZQkjXBM1u6kS3Z5/EzyGVhc7pxJ+o=
+github.com/dgruber/drmaa2os v0.3.30-0.20231011110435-66169dac15d1/go.mod h1:YoP7RGyWxmokPNPL5DHTEHxxVS0c0oxtTTwxZx/KXqY=
 github.com/dgruber/gcpbatchtracker v0.2.3 h1:2eBSH7NhhJwS904oBn8gmShXRqkCzfif3IYUoJ/Z9PM=
 github.com/dgruber/gcpbatchtracker v0.2.3/go.mod h1:ql4Ohv09CnAjftsB/23yowRlziyUFPEYK/N/JaCdly0=
 github.com/distribution/reference v0.5.0 h1:/FUIFXtfc/x2gpa5/VGfiGLuOIdYa1t65IKK2OFGvA0=
