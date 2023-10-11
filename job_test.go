@@ -117,6 +117,27 @@ var _ = Describe("Job", func() {
 			Ω(job.Success()).Should(BeTrue())
 		})
 
+		It("should wait for a job with timeout", func() {
+			start := time.Now()
+
+			job := wf.Run("sleep", "100")
+			job.WaitWithTimeout(time.Millisecond * 100)
+			stop := time.Now()
+			err := job.LastError()
+			Ω(err).ShouldNot(BeNil())
+			Ω(err.Error()).Should(ContainSubstring("timeout"))
+			Ω(stop).Should(BeTemporally("<=", start.Add(time.Second*1)))
+			job.Kill()
+
+			start = time.Now()
+			job = wf.Run("sleep", "0.1")
+			job.WaitWithTimeout(time.Millisecond * 1000)
+			stop = time.Now()
+			err = job.LastError()
+			Ω(err).Should(BeNil())
+			Ω(stop).Should(BeTemporally("<=", start.Add(time.Millisecond*900)))
+		})
+
 		It("should report that one job failed", func() {
 			start := time.Now()
 			job := wf.Run("sleep", "1").Run("sleep", "0").Run("sleep", "0").Synchronize()

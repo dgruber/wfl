@@ -594,7 +594,8 @@ func (j *Job) Wait() *Job {
 		if task.job != nil {
 			j.infof(j.ctx, fmt.Sprintf("Wait() for job %s", task.job.GetID()))
 		} else if task.jobArray != nil {
-			j.infof(j.ctx, fmt.Sprintf("Wait() for job array %s", task.jobArray.GetID()))
+			j.infof(j.ctx, fmt.Sprintf("Wait() for job array %s",
+				task.jobArray.GetID()))
 		}
 		// check if we waited already (drmaa1 allows only one API call for job info)
 		if task.waitForEndStateCollectedJobInfo {
@@ -607,6 +608,35 @@ func (j *Job) Wait() *Job {
 			"Wait() has no task to wait for",
 		)
 		j.lastError = errors.New("task not available")
+	}
+	return j
+}
+
+// WaitWithTimeout waits until the most recent task is finished. In case of a
+// job array it waits for all tasks of the array. It returns either when the
+// task is finished or the timeout is reached. In case of an timeout an error is
+// set which can be retrieved with LastError().
+func (j *Job) WaitWithTimeout(timeout time.Duration) *Job {
+	j.infof(j.ctx, "WaitWithTimeout()")
+	j.lastError = nil
+	finished := make(chan bool)
+
+	go func() {
+		j.Wait()
+		finished <- true
+	}()
+
+	select {
+	case <-finished:
+		// all good
+	case <-time.After(timeout):
+		j.errorf(
+			j.ctx,
+			"WaitWithTimeout() timeout after %s",
+			timeout.String(),
+		)
+		j.lastError = fmt.Errorf("WaitWithTimeout() timeout after %s",
+			timeout.String())
 	}
 	return j
 }

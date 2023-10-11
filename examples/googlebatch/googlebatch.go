@@ -57,9 +57,8 @@ echo "hello from prolog"
 			},
 		},
 	})
-	if job.Errored() {
-		panic(job.LastError())
-	}
+
+	job.OnErrorPanic()
 
 	fmt.Println("Waiting for all jobs to be finished...")
 	job.Synchronize()

@@ -9,8 +9,8 @@ import (
 	"github.com/dgruber/wfl/pkg/log"
 )
 
-// Workflow contains the backend context and a job session. The DRMAA2 job session
-// provides typically logical isolation between jobs.
+// Workflow contains the backend context and a job session. The DRMAA2 job
+// session provides typically logical isolation between jobs.
 type Workflow struct {
 	ctx                   *Context
 	js                    drmaa2interface.JobSession
