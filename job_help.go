@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"text/template"
+	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/wfl/pkg/matrix"
@@ -151,12 +152,21 @@ func jobArrayState(jobArray drmaa2interface.ArrayJob, wait bool) drmaa2interface
 	return jobArrayState
 }
 
-func waitArrayJobTerminated(jobArray drmaa2interface.ArrayJob) error {
+// waitArrayJobTerminated waits for all jobs in the array to be terminated
+// drmaa2interface.InfiniteTime can be used for waiting forever
+func waitArrayJobTerminated(jobArray drmaa2interface.ArrayJob, timeout time.Duration) error {
 	var lastErr error
+	start := time.Now()
 	for _, job := range jobArray.GetJobs() {
-		err := job.WaitTerminated(drmaa2interface.InfiniteTime)
+		err := job.WaitTerminated(timeout)
 		if err != nil {
 			lastErr = err
+		}
+		if timeout != drmaa2interface.InfiniteTime {
+			timeout = timeout - time.Since(start)
+			if timeout < 0 {
+				return fmt.Errorf("timeout reached")
+			}
 		}
 	}
 	return lastErr

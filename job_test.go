@@ -471,6 +471,15 @@ var _ = Describe("Job", func() {
 			Ω(job.Success()).Should(BeTrue())
 		})
 
+		It("should run a bunch of jobs and timeout while waiting", func() {
+			start := time.Now()
+			job := flow.RunArrayJob(1, 10, 1, 1, "sleep", "0.1").WaitWithTimeout(time.Millisecond * 200)
+			stop := time.Now()
+			Ω(job.LastError()).ShouldNot(BeNil())
+			Ω(job.LastError().Error()).Should(ContainSubstring("timeout"))
+			Ω(stop).Should(BeTemporally("<=", start.Add(time.Millisecond*300)))
+		})
+
 		It("should run a bunch of failing jobs", func() {
 			job := flow.RunArrayJob(1, 10, 1, 5, "/bin/bash", "-c", "exit 77").Wait()
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))

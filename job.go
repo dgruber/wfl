@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -98,7 +99,8 @@ func (j *Job) State() drmaa2interface.JobState {
 	j.begin(j.ctx, "State()")
 	task := j.lastJob()
 	// drmaa1 dictates caching
-	if task != nil && task.waitForEndStateCollectedJobInfo && task.jobinfoError == nil {
+	if task != nil && task.waitForEndStateCollectedJobInfo &&
+		task.jobinfoError == nil {
 		return task.jobinfo.State
 	}
 	job, jobArray, err := j.jobCheck()
@@ -235,7 +237,8 @@ func (j *Job) RunT(t drmaa2interface.JobTemplate) *Job {
 // of commands at any given time. If set to 1 it forces sequential execution.
 // If not required it should be set to the total amount of tasks specified.
 func (j *Job) RunArray(begin, end, step, maxParallel int, cmd string, args ...string) *Job {
-	j.begin(j.ctx, fmt.Sprintf("RunArray(%d, %d, %d, %d, %s, %v)", begin, end, step, maxParallel, cmd, args))
+	j.begin(j.ctx, fmt.Sprintf("RunArray(%d, %d, %d, %d, %s, %v)",
+		begin, end, step, maxParallel, cmd, args))
 	if err := j.checkCtx(); err != nil {
 		j.lastError = err
 		return j
@@ -245,20 +248,23 @@ func (j *Job) RunArray(begin, end, step, maxParallel int, cmd string, args ...st
 	j.lastError = err
 	jobTemplate, copyErr := copystructure.Copy(jt)
 	if copyErr != nil {
-		j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
-			template: jobTemplate.(drmaa2interface.JobTemplate)})
+		j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true,
+			submitError: err,
+			template:    jobTemplate.(drmaa2interface.JobTemplate)})
 		j.errorf(j.ctx, "could not copy job template: %v", copyErr)
 		return j
 	}
-	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
-		template: jobTemplate.(drmaa2interface.JobTemplate)})
+	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true,
+		submitError: err,
+		template:    jobTemplate.(drmaa2interface.JobTemplate)})
 	return j
 }
 
 // RunArrayT executes the job defined in a JobTemplate multiple times. See also
 // RunArray().
 func (j *Job) RunArrayT(begin, end, step, maxParallel int, jt drmaa2interface.JobTemplate) *Job {
-	j.begin(j.ctx, fmt.Sprintf("RunArrayT(%d, %d, %d, %d, %v)", begin, end, step, maxParallel, jt))
+	j.begin(j.ctx, fmt.Sprintf("RunArrayT(%d, %d, %d, %d, %v)",
+		begin, end, step, maxParallel, jt))
 	if err := j.checkCtx(); err != nil {
 		j.lastError = err
 		return j
@@ -266,8 +272,9 @@ func (j *Job) RunArrayT(begin, end, step, maxParallel int, jt drmaa2interface.Jo
 	job, err := j.wfl.js.RunBulkJobs(jt, begin, end, step, maxParallel)
 	j.lastError = err
 	jobTemplate, _ := copystructure.Copy(jt)
-	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true, submitError: err,
-		template: jobTemplate.(drmaa2interface.JobTemplate)})
+	j.tasklist = append(j.tasklist, &task{jobArray: job, isJobArray: true,
+		submitError: err,
+		template:    jobTemplate.(drmaa2interface.JobTemplate)})
 	return j
 }
 
@@ -565,51 +572,34 @@ func (j *Job) After(d time.Duration) *Job {
 	return j
 }
 
-func wait(task *task) {
+func wait(task *task, timeout time.Duration) error {
 	if task.terminated {
-		return
+		return nil
 	}
 	if task.job == nil {
 		if task.jobArray == nil {
-			return
+			return nil
 		}
-		task.terminationError = waitArrayJobTerminated(task.jobArray)
+		task.terminationError = waitArrayJobTerminated(task.jobArray, timeout)
 		task.terminated = true
 		// TODO cache job info
-		return
-	}
-	task.terminationError = task.job.WaitTerminated(drmaa2interface.InfiniteTime)
-	task.terminated = true
-	// cache the jobinfo
-	task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
-	task.waitForEndStateCollectedJobInfo = true
-}
-
-// Wait until the most recent task is finished. In case of a job array it waits
-// for all tasks of the array.
-func (j *Job) Wait() *Job {
-	j.infof(j.ctx, "Wait()")
-	j.lastError = nil
-	if task := j.lastJob(); task != nil {
-		if task.job != nil {
-			j.infof(j.ctx, fmt.Sprintf("Wait() for job %s", task.job.GetID()))
-		} else if task.jobArray != nil {
-			j.infof(j.ctx, fmt.Sprintf("Wait() for job array %s",
-				task.jobArray.GetID()))
+		if task.terminationError != nil &&
+			strings.Contains(task.terminationError.Error(), "timeout") {
+			return errors.New("timeout")
 		}
-		// check if we waited already (drmaa1 allows only one API call for job info)
-		if task.waitForEndStateCollectedJobInfo {
-			return j
-		}
-		wait(task)
-	} else {
-		j.errorf(
-			j.ctx,
-			"Wait() has no task to wait for",
-		)
-		j.lastError = errors.New("task not available")
+		return nil
 	}
-	return j
+	task.terminationError = task.job.WaitTerminated(timeout)
+	state := task.job.GetState()
+	if state == drmaa2interface.Done ||
+		state == drmaa2interface.Failed {
+		task.terminated = true
+		// cache the jobinfo
+		task.jobinfo, task.jobinfoError = task.job.GetJobInfo()
+		task.waitForEndStateCollectedJobInfo = true
+		return nil
+	}
+	return errors.New("timeout")
 }
 
 // WaitWithTimeout waits until the most recent task is finished. In case of a
@@ -619,26 +609,41 @@ func (j *Job) Wait() *Job {
 func (j *Job) WaitWithTimeout(timeout time.Duration) *Job {
 	j.infof(j.ctx, "WaitWithTimeout()")
 	j.lastError = nil
-	finished := make(chan bool)
-
-	go func() {
-		j.Wait()
-		finished <- true
-	}()
-
-	select {
-	case <-finished:
-		// all good
-	case <-time.After(timeout):
+	if task := j.lastJob(); task != nil {
+		if task.job != nil {
+			j.infof(j.ctx, fmt.Sprintf("WaitWithTimeout() for job %s",
+				task.job.GetID()))
+		} else if task.jobArray != nil {
+			j.infof(j.ctx, fmt.Sprintf("WaitWithTimeout() for job array %s",
+				task.jobArray.GetID()))
+		}
+		// check if we waited already (drmaa1 allows only one API call for job info)
+		if task.waitForEndStateCollectedJobInfo {
+			return j
+		}
+		err := wait(task, timeout)
+		if err != nil {
+			j.errorf(
+				j.ctx,
+				"WaitWithTimeout() has timed out",
+			)
+			j.lastError = err
+		}
+	} else {
 		j.errorf(
 			j.ctx,
-			"WaitWithTimeout() timeout after %s",
-			timeout.String(),
+			"WaitForTimeout() has no task to wait for",
 		)
-		j.lastError = fmt.Errorf("WaitWithTimeout() timeout after %s",
-			timeout.String())
+		j.lastError = errors.New("task not available")
 	}
 	return j
+}
+
+// Wait until the most recent task is finished. In case of a job array it waits
+// for all tasks of the array.
+func (j *Job) Wait() *Job {
+	j.infof(j.ctx, "Wait()")
+	return j.WaitWithTimeout(drmaa2interface.InfiniteTime)
 }
 
 // Retry waits until the last task in chain (not for the previous ones) is finished.
@@ -666,7 +671,7 @@ func (j *Job) Synchronize() *Job {
 			continue
 		}
 		j.infof(j.ctx, fmt.Sprintf("Synchronize() wait for job %s", task.job.GetID()))
-		wait(task)
+		wait(task, drmaa2interface.InfiniteTime)
 	}
 	return j
 }
@@ -680,7 +685,7 @@ func (j *Job) ListAllFailed() []drmaa2interface.Job {
 		if task.job == nil {
 			continue
 		}
-		wait(task)
+		wait(task, drmaa2interface.InfiniteTime)
 		if task.job.GetState() == drmaa2interface.Failed {
 			failed = append(failed, task.job)
 		}
@@ -792,17 +797,20 @@ func (j *Job) RetryAnyFailed(amount int) *Job {
 	j.begin(j.ctx, fmt.Sprintf("RetryAnyFailed(%d)", amount))
 	for i := 0; i < amount || amount == -1; i++ {
 		for _, task := range j.tasklist {
-			wait(task)
+			wait(task, drmaa2interface.InfiniteTime)
 			if task.job != nil && task.job.GetState() == drmaa2interface.Failed {
 				failedJobID := task.job.GetID()
 				replaceTask(j, task)
-				j.warningf(j.ctx, "RetryAnyFailed(%d)): Task %s failed. Retry task (%s).",
+				j.warningf(j.ctx,
+					"RetryAnyFailed(%d)): Task %s failed. Retry task (%s).",
 					amount, failedJobID, task.job.GetID())
 			}
 			if task.jobArray != nil {
 				for _, job := range task.jobArray.GetJobs() {
 					if job.GetState() == drmaa2interface.Failed {
-						j.warningf(j.ctx, "cannot retry failed job array task %s\n", job.GetID())
+						j.warningf(j.ctx,
+							"cannot retry failed job array task %s\n",
+							job.GetID())
 					}
 				}
 			}
@@ -1081,7 +1089,8 @@ func (j *Job) OutputError() string {
 	if j.wfl.ctx.SMType != DefaultSessionManager &&
 		j.wfl.ctx.SMType != DockerSessionManager &&
 		j.wfl.ctx.SMType != KubernetesSessionManager {
-		j.errorf(j.ctx, "OutputError(): not supported for backend %s", j.wfl.ctx.SMType)
+		j.errorf(j.ctx, "OutputError(): not supported for backend %s",
+			j.wfl.ctx.SMType)
 		j.lastError = errors.New("ouput not supported for this backend")
 		return ""
 	}
