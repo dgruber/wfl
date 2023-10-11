@@ -26,15 +26,19 @@ jobs:
       #- run: 
       #    name: Get dependencies
       #    command: go get -v -t -d ./...
+      - run:
+          name: Install ginkgo
+          command: go install github.com/onsi/ginkgo/v2/ginkgo
       - run: 
           name: Run main tests
-          command: go test -v
+          command: ginkgo -v
       - run: 
           name: Build all examples using wfl itself
           command: cd test && go run test.go
       - run:
           name: Code coverage file
-          command: go test -race -coverprofile=coverage.txt -covermode=atomic
+          command: ginkgo --race --cover -coverprofile=coverage.txt -covermode=atomic .
+          #command: go test -race -coverprofile=coverage.txt -covermode=atomic
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
