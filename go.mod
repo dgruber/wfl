@@ -18,7 +18,7 @@ replace (
 require (
 	github.com/deepmap/oapi-codegen v1.15.0
 	github.com/dgruber/drmaa2interface v1.1.0
-	github.com/dgruber/drmaa2os v0.3.30-0.20231011110435-66169dac15d1
+	github.com/dgruber/drmaa2os v0.3.29
 	github.com/dgruber/gcpbatchtracker v0.2.3
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/mitchellh/copystructure v1.2.0
