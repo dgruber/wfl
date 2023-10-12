@@ -18,7 +18,7 @@ replace (
 require (
 	github.com/deepmap/oapi-codegen v1.15.0
 	github.com/dgruber/drmaa2interface v1.1.0
-	github.com/dgruber/drmaa2os v0.3.30-0.20231011110435-66169dac15d1
+	github.com/dgruber/drmaa2os v0.3.30
 	github.com/dgruber/gcpbatchtracker v0.2.3
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/mitchellh/copystructure v1.2.0
@@ -177,7 +177,7 @@ require (
 	gotest.tools/v3 v3.0.3 // indirect
 	k8s.io/api v0.27.6 // indirect
 	k8s.io/apimachinery v0.27.6 // indirect
-	k8s.io/client-go v0.22.6 // indirect
+	k8s.io/client-go v0.27.6 // indirect
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
