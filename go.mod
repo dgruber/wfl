@@ -112,7 +112,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgruber/drmaa v1.0.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v20.10.24+incompatible // indirect
+	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/getkin/kin-openapi v0.118.0 // indirect
