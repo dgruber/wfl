@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-env-configmap 
+data:
+  ENV_FROM_CONDFIGMAP: is_heret
+  USER: another_value_from_configmap

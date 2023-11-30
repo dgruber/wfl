@@ -24,12 +24,17 @@ func main() {
 			"anotherenv": "anothercontent",
 		},
 	}
-	// must be set separatly due to struct embedding
+	// for adding extensions please check here:
+	// https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker/convert.go
 	jobTemplate.ExtensionList = map[string]string{
 		// There must be a secret called my-credentials-secret.
 		// To create one:
 		// kubectl create secret generic my-credentials-secret --from-literal=password=secret
 		"env-from-secret": "my-credentials-secret",
+		// envs can also be come from ConfigMaps which must pre-exist. If you
+		// need to specify multiple config maps, they can be specified as ":" separated
+		// (like my-env-configmap1:my-env-configmap2) in the value.
+		"env-from-configmap": "my-env-configmap",
 	}
 
 	// Data can also be added as files into the container, the content
@@ -54,10 +59,7 @@ func main() {
 	fmt.Printf("Job state: %s\n", job.State().String())
 
 	// Print the output of the job
-	jobInfo := job.JobInfo()
-	if jobInfo.ExtensionList != nil {
-		fmt.Printf("job output: %s\n", jobInfo.ExtensionList["output"])
-	}
+	fmt.Printf("Job output: %v\n", job.Output())
 
 	fmt.Println("Removing job objects from Kubernetes")
 	job.ReapAll()
