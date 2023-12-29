@@ -1,13 +1,13 @@
-package jstream_test
+package remote_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"testing"
 )
 
-func TestJstream(t *testing.T) {
+func TestRemote(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Jstream Suite")
+	RunSpecs(t, "Remote Suite")
 }

@@ -100,8 +100,6 @@ from other workflows.
 
 _wfl_ works with simple primitives: _context_, _workflow_, _job_, and _jobtemplate_
 
-Experimental: Jobs can also be processed in [job control streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go).
-
 First support for logging is also available. Log levels can be controlled by environment variables
 (_export WFL_LOGLEVEL=DEBUG_ or _INFO_/_WARNING_/_ERROR_/_NONE_). Applications can use the same
 logging facility by getting the logger from the workflow (_workflow.Logger()_) or registering
@@ -377,7 +375,7 @@ I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa
 * [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
 * [Singularity support](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/singularity)
 
-The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates and required as generators of job [streams](https://github.com/dgruber/wfl/blob/master/examples/stream/stream.go). For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
+The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates. For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
 ## Examples
 
