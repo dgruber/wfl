@@ -14,7 +14,8 @@ import (
 // Docker image, which is used when Run() is called or when RunT() is used
 // but the job category is not set in the job template.
 type Config struct {
-	DBFile             string
+	DBFile string
+	// DefaultDockerImage needs to be pulled before.
 	DefaultDockerImage string
 	DefaultTemplate    drmaa2interface.JobTemplate
 }
