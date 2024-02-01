@@ -7,6 +7,7 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 
 ## What's new?
 
+- Remote context for executing job workflows remotely
 - GPT support for experimenting with LLMs in job workflows ([blog article](https://www.gridengine.eu/index.php/programming-apis/260-enhancing-wfl-with-large-language-models-researching-the-power-of-gpt-for-hpcaienterprisejob-workflows-2023-05-14), [examples](https://github.com/dgruber/wfl/blob/master/examples/llm_openai/main.go))
 - _Check out my [blog article](https://gridengine.eu/index.php/programming-apis/259-streamline-your-machine-learning-workflows-with-the-wfl-go-library-2023-04-10), where I discuss leveraging the wfl library for ML/AI applications using Python and TensorFlow, among other tools._
 
@@ -21,8 +22,9 @@ workload management systems. _wfl_ provides a simple, unified interface which al
 to quickly define and execute a job workflow and change between different execution
 backends without changing the workflow itself.
 
-_wfl_ does not come with many features but is simple to use and enough to define and
-run jobs and job workflows with inter-job dependencies.
+_wfl_ is simple to use and designed to define and
+run jobs and self-contained job workflows with inter-job dependencies. There is no external controller runtime required. The whole job workflow can be contained in a 
+single binary.
 
 In its simplest form a process can be started and waited for:
 
@@ -30,17 +32,18 @@ In its simplest form a process can be started and waited for:
     wfl.NewWorkflow(wfl.NewProcessContext()).Run("convert", "image.jpg", "image.png").Wait()
 ```
 
-If the output of the command needs to be displayed on the terminal you can set the out path in the
-default _JobTemplate_ (see below) configuration:
+If the output of the command needs to be displayed on the terminal you can set the out path in the default _JobTemplate_ (see below) configuration:
 
 ```go
  template := drmaa2interface.JobTemplate{
-  ErrorPath:  "/dev/stderr",
-  OutputPath: "/dev/stdout",
+        ErrorPath:  "/dev/stderr",
+        OutputPath: "/dev/stdout",
  }
+
  flow := wfl.NewWorkflow(wfl.NewProcessContextByCfg(wfl.ProcessConfig{
-  DefaultTemplate: template,
+        DefaultTemplate: template,
  }))
+
  flow.Run("echo", "hello").Wait()
 ```
 
@@ -49,13 +52,13 @@ already pulled before).
 
 ```go
     import (
- "github.com/dgruber/drmaa2interface"
- "github.com/dgruber/wfl"
- "github.com/dgruber/wfl/pkg/context/docker"
+        "github.com/dgruber/drmaa2interface"
+        "github.com/dgruber/wfl"
+        "github.com/dgruber/wfl/pkg/context/docker"
     )
     
     ...
-    ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
+    ctx := docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "busybox:latest"})
     wfl.NewWorkflow(ctx).Run("sleep", "60").Wait()
 ```
 
@@ -86,7 +89,7 @@ _wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine 
 
 _wfl_ aims to work for any kind of workload. It works on a Mac and Raspberry Pi the same way as on a high-performance compute cluster.
 
-There is now basic support for getting the job output as a string back with the _Output()_ method. It is a convenience wrapper which just reads the job output from a file which
+There is basic support for getting the job output as a string back with the _Output()_ method. It is a convenience wrapper which just reads the job output from a file which
 must be set before with _OutputPath_. Note that when having multiple tasks, they need
 to have different output paths set (hence use _RunT()_, or different flows, try
 the new "{{.ID}}" replacement in the _OutputPath_, or use _wfl.RandomFileNameInTempDir()_ as _OutputPath_). _Output()_ is currently implemented for the OS, Docker, and Kubernetes backend.
@@ -133,11 +136,10 @@ If the workflow needs to be executed in containers the _DockerContext_ can be us
 ```
 
 If the Docker context needs to be configured with a default Docker image
-(when Run() is used or RunT() without a configured _JobCategory_ (which _is_ the Docker image))
-then the _ContextByCfg()_ can be called.
+(when Run() is used or RunT() without a configured _JobCategory_ (which _is_ the Docker image)) then the _ContextByCfg()_ can be called.
 
 ```go
-    docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "golang:latest"})
+    docker.NewDockerContextByCfg(docker.Config{DefaultDockerImage: "busybox:latest"})
 ```
 
 For running jobs either in VMs or in containers in Google Batch the _GoogleBatchContext_ needs to be allocated:
@@ -173,26 +175,15 @@ For submitting Kubernetes batch jobs a Kubernetes context exists.
    ctx := kubernetes.NewKubernetesContext()
 ```
 
-Note that each job requires a container image specified which can be done by using
-the JobTemplate's JobCategory. When the same container image is used within the whole
-job workflow it makes sense to use the Kubernetes config.
+Note, that each job requires a container image specified which can be done by using
+the JobTemplate's _JobCategory_. When the same container image is used within the whole job workflow it makes sense to use the Kubernetes config otherwise you
+can use _RunT()_ to specify a container image for a specific task.
 
 ```go
    ctx := kubernetes.NewKubernetesContextByCfg(kubernetes.Config{DefaultImage: "busybox:latest"})
 ```
 
-[Singularity](https://en.wikipedia.org/wiki/Singularity_(software)) containers can be executed
-within the Singularity context. When setting the _DefaultImage_ (like in the Kubernetes Context)
-then then _Run()_ methods can be used otherwise the Container image must be specified in the
-JobTemplate's _JobCategory_ field separately for each job. The _DefaultImage_
-can always be overridden by the _JobCategory_. Note that each task / job
-executes a separate Singularity container process.
-
-```go
-   ctx := wfl.NewSingularityContextByCfg(wfl.SingularityConfig{DefaultImage: ""}))
-```
-
-For working with HPC schedulers the libdrmaa context can be used. This context requires
+For working with HPC schedulers the _libdrmaa_ context can be used. This context requires
 _libdrmaa.so_ available in the library path at runtime. Grid Engine ships _libdrmaa.so_
 but the _LD_LIBRARY_PATH_ needs to be typically set. For SLURM _libdrmaa.so_ often needs
 to be [build](https://github.com/natefoo/slurm-drmaa).
@@ -214,6 +205,32 @@ If all set a libdrmaa context can be created by importing:
 
 The JobCategory is whatever the workload-manager associates with it. Typically it is a
 set of submission parameters. A basic example is [here](https://github.com/dgruber/wfl/blob/master/examples/libdrmaa/libdrmaa.go).
+
+The **Remote Context** is used for sending jobs to a _drmaa2os_ compatible
+job remote server backend. Such a remote server can be easily created by
+the drmaa2os remote jobtracker package or by using the [OpenAPI specification](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/remote/jobtracker_1_0_0_openapi_v3.yaml).
+It allows to use any existing drmaa2 jobtracker to be accessible as a server. An example is executing Docker containers on a remote server. Another is sending jobs from a container running in Kubernetes to a sidecar.
+
+A simple server example is [here](https://github.com/dgruber/drmaa2os/blob/master/examples/remote/server/server.go). Another is [here](https://github.com/dgruber/wfl/blob/master/examples/remote/server/server.go).
+
+```go
+
+    import(
+   	    genclient "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client/generated"
+        ...
+    )
+
+	params := &client.ClientTrackerParams{
+		Server: "https://localhost:8088",
+		Path:   "/jobserver/jobmanagement",
+		Opts: []genclient.ClientOption{
+			genclient.WithHTTPClient(httpsClient),
+			genclient.WithRequestEditorFn(basicAuthProvider.Intercept),
+		},
+	}
+
+	ctx := wfl.NewRemoteContext(wfl.RemoteConfig{}, params)
+```
 
 ## Workflow
 
@@ -369,11 +386,10 @@ default template when creating the context (_...ByConfig()_). Then each _Run()_ 
 I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa2interface/blob/master/jobtemplate.go). In most cases only _RemoteCommand_, _Args_, _WorkingDirectory_, _JobCategory_, _JobEnvironment_,  _StageInFiles_ are evaluated. Functionality and semantic is up to the underlying [drmaa2os job tracker](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker).
 
 * [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
-* [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
-* [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
-* [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 * [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
-* [Singularity support](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/singularity)
+* [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
+* [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
+* [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates. For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
 
@@ -387,7 +403,6 @@ and reports errors.
 
 [cloudfoundry](https://github.com/dgruber/wfl/blob/master/examples/cloudfoundry/cloudfoundry.go) demonstrates how a Cloud Foundry tasks can be created.
 
-[Singularity containers](https://github.com/dgruber/wfl/blob/master/examples/singularity/singularity.go) can also be created which is helpful when managing a simple Singularity _wfl_ container workflow within a single HPC job either to fully exploit all resources and reduce the amount of HPC jobs.
 
 ## Creating a Workflow which is Executed as OS Processes
 

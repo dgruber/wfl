@@ -4,30 +4,25 @@ go 1.21
 
 toolchain go1.21.5
 
-//replace (
-//	github.com/containerd/containerd => github.com/containerd/containerd v1.5.13
-//	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4
-//)
-
 replace (
-	k8s.io/api => k8s.io/api v0.27.6
-	k8s.io/apimachinery => k8s.io/apimachinery v0.27.6
-	k8s.io/client-go => k8s.io/client-go v0.27.6
+	k8s.io/api => k8s.io/api v0.27.10
+	k8s.io/apimachinery => k8s.io/apimachinery v0.27.10
+	k8s.io/client-go => k8s.io/client-go v0.27.10
 )
 
 require (
 	github.com/deepmap/oapi-codegen v1.16.2
-	github.com/dgruber/drmaa2interface v1.1.0
-	github.com/dgruber/drmaa2os v0.3.31
+	github.com/dgruber/drmaa2interface v1.2.1
+	github.com/dgruber/drmaa2os v0.3.32
 	github.com/dgruber/gcpbatchtracker v0.2.3
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/onsi/ginkgo/v2 v2.13.2
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/ginkgo/v2 v2.15.0
+	github.com/onsi/gomega v1.31.1
 	github.com/rs/zerolog v1.31.0
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
-	k8s.io/klog/v2 v2.110.1
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
+	k8s.io/klog/v2 v2.120.1
 )
 
 require (
@@ -88,7 +83,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
@@ -116,7 +111,7 @@ require (
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/getkin/kin-openapi v0.122.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
@@ -157,14 +152,14 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.16.1 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -175,8 +170,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.0.3 // indirect
-	k8s.io/api v0.27.6 // indirect
-	k8s.io/apimachinery v0.27.6 // indirect
+	k8s.io/api v0.27.10 // indirect
+	k8s.io/apimachinery v0.27.10 // indirect
 	k8s.io/client-go v0.27.6 // indirect
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
