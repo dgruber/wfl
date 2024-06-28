@@ -81,7 +81,7 @@ Starting a Kubernetes batch job and waiting for its end is not much different.
     wfl.NewWorkflow(kubernetes.NewKubernetesContext()).Run("sleep", "60").Wait()
 ```
 
-_wfl_ also supports submitting jobs into HPC schedulers like SLURM, Grid Engine and so on.
+_wfl_ also supports submitting jobs into HPC schedulers like SLURM, Open Cluster Scheduler / Grid Engine and so on.
 
 ```go
     wfl.NewWorkflow(libdrmaa.NewLibDRMAAContext()).Run("sleep", "60").Wait()
@@ -388,7 +388,7 @@ I'm using currently the [DRMAA2 Go JobTemplate](https://github.com/dgruber/drmaa
 * [For the process mapping see here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/simpletracker)
 * [For the Kubernetes batch job mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/kubernetestracker)
 * [For the Docker mapping here](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/dockertracker)
-* [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
+* [For the mapping to a drmaa1 implementation (libdrmaa.so) for SLURM, Open Cluster Scheduler / Grid Engine, PBS, ...](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/libdrmaa)
 * [For the Cloud Foundry Task mapping here](https://github.com/dgruber/drmaa2os/blob/master/pkg/jobtracker/cftracker)
 
 The [_Template_](https://github.com/dgruber/wfl/blob/master/template.go) object provides helper functions for job templates. For an example see [here](https://github.com/dgruber/wfl/tree/master/examples/template/template.go).
