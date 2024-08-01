@@ -34,7 +34,8 @@ func main() {
 		// envs can also be come from ConfigMaps which must pre-exist. If you
 		// need to specify multiple config maps, they can be specified as ":" separated
 		// (like my-env-configmap1:my-env-configmap2) in the value.
-		"env-from-configmap": "my-env-configmap",
+		"env-from-configmap":      "my-env-configmap",
+		"ttlsecondsafterfinished": "30",
 	}
 
 	// Data can also be added as files into the container, the content
@@ -62,7 +63,10 @@ func main() {
 	fmt.Printf("Job output: %v\n", job.Output())
 
 	fmt.Println("Removing job objects from Kubernetes")
-	job.ReapAll()
+
+	// Added TTL to the job template so that the job is removed
+	// 30 seconds after it has finished. Hence, no need to reap it.
+	//job.ReapAll()
 }
 
 func getKubernetesWorkflow() *wfl.Workflow {
