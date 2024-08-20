@@ -91,7 +91,7 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should be possible to kill a job", func() {
-			job := wf.Run("/bin/sh", "-c", `for i in {1..10000}; do echo $i && sleep 0.1; done`).Kill()
+			job := wf.Run("/bin/sh", "-c", `for i in {1..10000}; do echo $i; done`).Kill()
 			Ω(job).ShouldNot(BeNil())
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Failed.String()))
 		})
