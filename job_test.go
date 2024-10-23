@@ -81,8 +81,10 @@ var _ = Describe("Job", func() {
 
 		It("should be possible to suspend and resume a job", func() {
 			job := wf.Run("sleep", "1")
+			Expect(job.Errored()).To(BeFalse())
 			Ω(job).ShouldNot(BeNil())
 			job.Suspend()
+			Expect(job.LastError()).To(BeNil())
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Suspended.String()))
 			job.Resume()
 			Ω(job.State().String()).Should(Equal(drmaa2interface.Running.String()))
