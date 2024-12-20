@@ -14,8 +14,10 @@ _Don't mix wfl with [WFL](https://en.wikipedia.org/wiki/Work_Flow_Language)._
 ## Introduction
 
 Creating process, container, pod, task, or job workflows based on raw interfaces of
-operating systems, Docker, Google Batch, Kubernetes, and HPC job schedulers
-can be a tedious. Lots of repeating code is required. All workload management systems have a different API.
+operating systems, Docker, Google Batch, Kubernetes, and HPC job schedulers like
+[Open Cluster Scheduler](https://github.com/hpc-gridware/clusterscheduler) can
+be a tedious. Lots of repeating code is required. All workload management systems
+have a different API.
 
 _wfl_ abstracts away from the underlying details of the processes, containers, and
 workload management systems. _wfl_ provides a simple, unified interface which allows
@@ -23,7 +25,8 @@ to quickly define and execute a job workflow and change between different execut
 backends without changing the workflow itself.
 
 _wfl_ is simple to use and designed to define and
-run jobs and self-contained job workflows with inter-job dependencies. There is no external controller runtime required. The whole job workflow can be contained in a 
+run jobs and self-contained job workflows with inter-job dependencies. There is no
+external controller runtime required. The whole job workflow can be contained in a 
 single binary.
 
 In its simplest form a process can be started and waited for:
@@ -81,7 +84,8 @@ Starting a Kubernetes batch job and waiting for its end is not much different.
     wfl.NewWorkflow(kubernetes.NewKubernetesContext()).Run("sleep", "60").Wait()
 ```
 
-_wfl_ also supports submitting jobs into HPC schedulers like SLURM, Open Cluster Scheduler / Grid Engine and so on.
+_wfl_ also supports submitting jobs into HPC schedulers like SLURM, Open Cluster Scheduler /
+Grid Engine and so on.
 
 ```go
     wfl.NewWorkflow(libdrmaa.NewLibDRMAAContext()).Run("sleep", "60").Wait()
